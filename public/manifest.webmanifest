@@ -1,0 +1,21 @@
+{
+  "name": "GitHub Spam Account Blocker",
+  "short_name": "Spam Blocker",
+  "description": "Analyze followers and following accounts in your browser, review spam detection reasons, and block selected GitHub accounts with runtime-only token handling.",
+  "lang": "en",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#090d17",
+  "theme_color": "#090d17",
+  "orientation": "portrait-primary",
+  "categories": ["productivity", "security", "developer"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

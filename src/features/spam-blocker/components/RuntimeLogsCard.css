@@ -1,0 +1,5 @@
+.runtimeLogsScrollContainer {
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
