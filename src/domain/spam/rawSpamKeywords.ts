@@ -181,4 +181,5 @@ export const rawSpamKeywords: SpamRule[] = [
     isStrongSignal: true,
   },
   { reason: "Please follow", regex: /\bplease\s+follow\b/i, weight: 3 },
+  { reason: "please follow them", regex: /\bplease\s+follow\s+them\b/i, weight: 3 },
 ];

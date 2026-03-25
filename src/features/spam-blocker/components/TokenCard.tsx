@@ -1,21 +1,35 @@
+import { ApiOutlined, LockOutlined, SearchOutlined } from "@ant-design/icons";
 import { Alert, Button, Card, Input, Space, Typography } from "antd";
 import { useSpamBlockerStore } from "../../../stores/useSpamBlockerStore";
 
 export function TokenCard() {
   const token = useSpamBlockerStore((state) => state.token);
+  const connectionStatus = useSpamBlockerStore((state) => state.connectionStatus);
+  const authenticatedUser = useSpamBlockerStore((state) => state.authenticatedUser);
   const analysisStatus = useSpamBlockerStore((state) => state.analysisStatus);
   const blockStatus = useSpamBlockerStore((state) => state.blockStatus);
   const unblockStatus = useSpamBlockerStore((state) => state.unblockStatus);
   const lastError = useSpamBlockerStore((state) => state.lastError);
   const setToken = useSpamBlockerStore((state) => state.setToken);
+  const connectAccount = useSpamBlockerStore((state) => state.connectAccount);
   const analyzeAccounts = useSpamBlockerStore((state) => state.analyzeAccounts);
   const resetSession = useSpamBlockerStore((state) => state.resetSession);
 
+  const isConnected = authenticatedUser !== null;
   const isBusy =
-    analysisStatus === "running" || blockStatus === "running" || unblockStatus === "running";
+    connectionStatus === "running" ||
+    analysisStatus === "running" ||
+    blockStatus === "running" ||
+    unblockStatus === "running";
 
   return (
-    <Card title="Access Token">
+    <Card
+      title={
+        <>
+          <LockOutlined /> Connect Your Account
+        </>
+      }
+    >
       <Space direction="vertical" size="middle" style={{ width: "100%" }}>
         <Alert
           type="info"
@@ -26,22 +40,40 @@ export function TokenCard() {
         <Input.Password
           value={token}
           autoComplete="off"
-          placeholder="Paste token and click Analyze"
+          disabled={isConnected}
+          placeholder="ghp_... or github_pat_..."
           onChange={(event) => {
             setToken(event.target.value);
           }}
         />
         <Space>
-          <Button
-            type="primary"
-            loading={analysisStatus === "running"}
-            disabled={isBusy}
-            onClick={() => {
-              void analyzeAccounts();
-            }}
-          >
-            Analyze Accounts
-          </Button>
+          {!isConnected ? (
+            <Button
+              type="primary"
+              icon={<ApiOutlined />}
+              className={!isBusy && token.length > 0 ? "cta-pulse" : ""}
+              loading={connectionStatus === "running"}
+              disabled={isBusy || token.length === 0}
+              onClick={() => {
+                void connectAccount();
+              }}
+            >
+              Connect
+            </Button>
+          ) : (
+            <Button
+              type="primary"
+              icon={<SearchOutlined />}
+              className={analysisStatus === "idle" ? "cta-pulse" : ""}
+              loading={analysisStatus === "running"}
+              disabled={isBusy || analysisStatus !== "idle"}
+              onClick={() => {
+                void analyzeAccounts();
+              }}
+            >
+              Analyze Accounts
+            </Button>
+          )}
           <Button
             danger
             disabled={isBusy}

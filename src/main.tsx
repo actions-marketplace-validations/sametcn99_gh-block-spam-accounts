@@ -4,7 +4,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
-import { darkCartoonTheme } from "./theme/darkCartoonTheme";
+import { softAuroraTheme } from "./theme/softAuroraTheme";
 
 const rootElement = document.getElementById("root");
 
@@ -14,7 +14,7 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <ConfigProvider theme={darkCartoonTheme}>
+    <ConfigProvider theme={softAuroraTheme}>
       <HappyProvider>
         <AntdApp>
           <App />

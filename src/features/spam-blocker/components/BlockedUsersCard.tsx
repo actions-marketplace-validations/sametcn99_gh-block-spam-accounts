@@ -1,8 +1,10 @@
+import { CheckCircleOutlined } from "@ant-design/icons";
 import type { TableColumnsType } from "antd";
 import {
   Alert,
   Button,
   Card,
+  Empty,
   List,
   Popconfirm,
   Progress,
@@ -154,7 +156,14 @@ export function BlockedUsersCard() {
           rowKey={(row) => row.login}
           columns={columns}
           dataSource={tableData}
-          locale={{ emptyText: "No blocked accounts found." }}
+          locale={{
+            emptyText: (
+              <Empty
+                image={<CheckCircleOutlined style={{ fontSize: 36, color: "#475569" }} />}
+                description="No blocked accounts found"
+              />
+            ),
+          }}
           rowSelection={{
             selectedRowKeys: selectedBlockedUserLogins,
             onChange: (keys) => {

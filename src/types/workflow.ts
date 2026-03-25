@@ -28,6 +28,7 @@ export type BlockOutcome = {
 
 export type SpamBlockerState = {
   token: string;
+  connectionStatus: TaskStatus;
   authenticatedUser: AuthenticatedGitHubUser | null;
   oauthScopes: string | null;
   scopeWarning: string | null;

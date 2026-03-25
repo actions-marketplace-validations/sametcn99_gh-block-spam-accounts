@@ -1,5 +1,13 @@
-import { Button, Card, Space, Typography } from "antd";
+import { GithubOutlined } from "@ant-design/icons";
+import { Button, Space, Typography } from "antd";
+import type { CSSProperties } from "react";
 import { siteMetadata } from "../../../content/siteMetadata";
+
+const bannerStyle: CSSProperties = {
+  textAlign: "center",
+  padding: "24px 16px",
+  borderTop: "1px solid #334155",
+};
 
 export function ContributionCard() {
   const issueBody = encodeURIComponent(
@@ -10,21 +18,20 @@ export function ContributionCard() {
   const pullRequestUrl = `${siteMetadata.repositoryUrl}/pulls`;
 
   return (
-    <Card title="Contribute Detection Keywords">
-      <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+    <div style={bannerStyle}>
+      <Space direction="vertical" size={8} align="center">
         <Typography.Text type="secondary">
-          Help improve spam detection quality by proposing new keyword ideas and patterns in the
-          GitHub repository.
+          <GithubOutlined /> Help improve detection — suggest keywords or open a pull request.
         </Typography.Text>
-        <Space wrap>
-          <Button type="primary" href={issueUrl} target="_blank" rel="noreferrer">
-            Open Keyword Suggestion Issue
+        <Space>
+          <Button size="small" type="link" href={issueUrl} target="_blank" rel="noreferrer">
+            Suggest Keyword
           </Button>
-          <Button href={pullRequestUrl} target="_blank" rel="noreferrer">
-            Open Pull Request Page
+          <Button size="small" type="link" href={pullRequestUrl} target="_blank" rel="noreferrer">
+            Open PR
           </Button>
         </Space>
       </Space>
-    </Card>
+    </div>
   );
 }

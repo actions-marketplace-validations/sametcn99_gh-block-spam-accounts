@@ -42,6 +42,7 @@ const emptyBlockProgress: BlockProgress = {
 
 const baseState: SpamBlockerState = {
   token: "",
+  connectionStatus: "idle",
   authenticatedUser: null,
   oauthScopes: null,
   scopeWarning: null,
@@ -77,6 +78,7 @@ type SpamBlockerActions = {
   selectAllDetections: () => void;
   selectAllBlockedUsers: () => void;
   resetSession: () => void;
+  connectAccount: () => Promise<void>;
   analyzeAccounts: () => Promise<void>;
   blockSelectedAccounts: () => Promise<void>;
   unblockSelectedAccounts: () => Promise<void>;
@@ -222,15 +224,66 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
 
     appendLog(set, "info", "system", "Session state cleared.");
   },
-  analyzeAccounts: async () => {
+  connectAccount: async () => {
     const token = get().token.trim();
 
     if (!token) {
       set({
-        lastError: "Token is required to analyze accounts.",
-        analysisStatus: "error",
+        lastError: "Token is required to connect.",
+        connectionStatus: "error",
       });
       appendLog(set, "error", "auth", "Token is missing. Paste a token and retry.");
+      return;
+    }
+
+    set({
+      connectionStatus: "running",
+      lastError: null,
+    });
+
+    appendLog(set, "info", "auth", "Connecting to GitHub...");
+
+    try {
+      const octokit = createGitHubClient(token);
+      const authResponse = await fetchAuthenticatedUser(octokit);
+      const scopeWarning = getScopeWarning(authResponse.oauthScopes);
+      const rateLimitInfo = extractRateLimitInfo(authResponse.headers);
+
+      set({
+        connectionStatus: "completed",
+        authenticatedUser: authResponse.user,
+        oauthScopes: authResponse.oauthScopes,
+        scopeWarning,
+        rateLimit: rateLimitInfo,
+      });
+
+      appendLog(set, "success", "auth", `Connected as @${authResponse.user.login}.`);
+
+      if (scopeWarning) {
+        appendLog(set, "warning", "auth", scopeWarning);
+      }
+    } catch (error) {
+      const status = getErrorStatus(error);
+      const message = status ? `${toMessage(error)} (status ${status})` : toMessage(error);
+
+      set({
+        connectionStatus: "error",
+        lastError: message,
+      });
+
+      appendLog(set, "error", "auth", "Connection failed.", message);
+    }
+  },
+  analyzeAccounts: async () => {
+    const token = get().token.trim();
+    const authenticatedUser = get().authenticatedUser;
+
+    if (!token || !authenticatedUser) {
+      set({
+        lastError: "Connect your account before analyzing.",
+        analysisStatus: "error",
+      });
+      appendLog(set, "error", "analysis", "Not connected. Click Connect first.");
       return;
     }
 
@@ -250,26 +303,10 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
       analysisProgress: emptyAnalysisProgress,
     });
 
-    appendLog(set, "info", "auth", "Starting GitHub authentication and analysis flow.");
+    appendLog(set, "info", "analysis", "Starting spam analysis.");
 
     try {
       const octokit = createGitHubClient(token);
-      const authResponse = await fetchAuthenticatedUser(octokit);
-      const scopeWarning = getScopeWarning(authResponse.oauthScopes);
-      const rateLimitInfo = extractRateLimitInfo(authResponse.headers);
-
-      set({
-        authenticatedUser: authResponse.user,
-        oauthScopes: authResponse.oauthScopes,
-        scopeWarning,
-        rateLimit: rateLimitInfo,
-      });
-
-      appendLog(set, "success", "auth", `Authenticated as @${authResponse.user.login}.`);
-
-      if (scopeWarning) {
-        appendLog(set, "warning", "auth", scopeWarning);
-      }
 
       const [followers, following, blockedResult] = await Promise.all([
         fetchFollowers(octokit),
@@ -283,7 +320,7 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
         followerLogins,
         followingLogins,
         blockedResult.blockedLogins,
-        authResponse.user.login,
+        authenticatedUser.login,
       );
 
       set({

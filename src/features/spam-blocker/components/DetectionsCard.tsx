@@ -1,5 +1,6 @@
+import { SearchOutlined } from "@ant-design/icons";
 import type { TableColumnsType } from "antd";
-import { Button, Card, Space, Table, Tag, Typography } from "antd";
+import { Button, Card, Empty, Space, Table, Tag, Typography } from "antd";
 import { useSpamBlockerStore } from "../../../stores/useSpamBlockerStore";
 import type { DetectionSensitivity, SpamDetection } from "../../../types/spam";
 
@@ -85,7 +86,14 @@ export function DetectionsCard() {
           rowKey={(detection) => detection.profile.login}
           columns={columns}
           dataSource={detections}
-          locale={{ emptyText: "No detected accounts yet." }}
+          locale={{
+            emptyText: (
+              <Empty
+                image={<SearchOutlined style={{ fontSize: 36, color: "#475569" }} />}
+                description="Run an analysis to detect spam accounts"
+              />
+            ),
+          }}
           rowSelection={{
             selectedRowKeys: selectedLogins,
             onChange: (keys) => {
