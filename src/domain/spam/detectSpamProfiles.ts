@@ -18,6 +18,10 @@ type DetectionThresholdProfile = {
   numericRatioThreshold: number;
 };
 
+const bioHandlePattern = /@[a-z\d](?:[a-z\d-]{0,38})/gi;
+const alternateAccountBioPattern =
+  /\b(?:main|alt|backup|private|priv|locked|second|other|new|old|real|personal)(?:\s+(?:account|acc|profile))?\b/i;
+
 function getThresholdProfile(sensitivity: DetectionSensitivity): DetectionThresholdProfile {
   if (sensitivity === "aggressive") {
     return {
@@ -78,6 +82,16 @@ function countRegexMatches(input: string, regex: RegExp): number {
   return matches ? matches.length : 0;
 }
 
+function countPublicProfileFields(profile: GitHubProfile): number {
+  return [
+    profile.name,
+    profile.company,
+    profile.location,
+    profile.websiteUrl,
+    profile.twitterUsername,
+  ].filter((value): value is string => Boolean(value)).length;
+}
+
 function appendSignal(signalMap: Map<string, DetectionSignal>, signal: DetectionSignal): void {
   const existingSignal = signalMap.get(signal.reason);
 
@@ -101,11 +115,24 @@ function collectHeuristicSignals(
   thresholds: DetectionThresholdProfile,
 ): DetectionSignal[] {
   const heuristicSignals: DetectionSignal[] = [];
+  const rawBio = profile.bio ?? "";
+  const normalizedBio = normalizeText(rawBio);
+  const deobfuscatedBio = normalizeText(deobfuscateCommonSubstitutions(rawBio));
   const condensedProfileDetails = normalizedProfileDetails.replace(/\s+/g, "");
   const ctaTermMatches = countRegexMatches(
     deobfuscatedProfileDetails,
     /\b(?:follow|star|check|repo|repository|visit|support|block|remove|unfollow|main)\b/g,
   );
+  const bioHandleMentions = [...new Set(rawBio.match(bioHandlePattern) ?? [])].filter((handle) => {
+    const normalizedHandle = handle.slice(1).toLowerCase();
+    return (
+      normalizedHandle !== profile.login.toLowerCase() &&
+      normalizedHandle !== (profile.twitterUsername ?? "").toLowerCase()
+    );
+  });
+  const bioWithoutHandles = normalizeText(rawBio.replace(bioHandlePattern, " "));
+  const bioTokenCount = bioWithoutHandles.length > 0 ? bioWithoutHandles.split(" ").length : 0;
+  const publicProfileFieldCount = countPublicProfileFields(profile);
 
   if (
     /(?:followme|followback|f4f|f2f|checkmyrepo|checkmyrepos|starmyrepo|starmyrepos|blockif|sbtoremove)/.test(
@@ -139,6 +166,26 @@ function collectHeuristicSignals(
       reason: "multiple account handle references",
       weight: 4,
       isStrongSignal: true,
+    });
+  }
+
+  if (
+    bioHandleMentions.length > 0 &&
+    (alternateAccountBioPattern.test(normalizedBio) ||
+      alternateAccountBioPattern.test(deobfuscatedBio))
+  ) {
+    heuristicSignals.push({
+      reason: "bio links another account",
+      weight: 4,
+      isStrongSignal: true,
+    });
+  }
+
+  if (bioHandleMentions.length === 1 && bioTokenCount === 0 && publicProfileFieldCount === 0) {
+    heuristicSignals.push({
+      reason: "empty profile with bio-only handle redirect",
+      weight: 3,
+      isStrongSignal: false,
     });
   }
 

@@ -132,6 +132,7 @@ The engine includes checks such as:
 - dense call-to-action token chains
 - obfuscated call-to-action terms
 - multiple handle references suggesting alternate/main account patterns
+- bios that redirect to another handle, especially on sparse profiles
 - high call-to-action density
 - short-link profiles combined with call-to-action behavior
 - noisy login/text patterns
