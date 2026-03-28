@@ -8,6 +8,7 @@ import { BlockingCard } from "./components/BlockingCard";
 import { ContributionCard } from "./components/ContributionCard";
 import { CustomKeywordsCard } from "./components/CustomKeywordsCard";
 import { DetectionsCard } from "./components/DetectionsCard";
+import { GitHubActionGuideCard } from "./components/GitHubActionGuideCard";
 import { InsightCards } from "./components/InsightCards";
 import { PageHeaderCard } from "./components/PageHeaderCard";
 import { RateLimitCard } from "./components/RateLimitCard";
@@ -44,6 +45,7 @@ export function SpamBlockerPage() {
     <Layout style={{ minHeight: "100vh" }}>
       <Layout.Content style={contentStyle}>
         <PageHeaderCard />
+        <GitHubActionGuideCard />
         <WorkflowSteps currentStep={currentStep} />
         <StickyStatusBar />
 

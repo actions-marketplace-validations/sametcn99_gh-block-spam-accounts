@@ -7,6 +7,7 @@ The app runs completely on the client side. Your token is used at runtime in the
 ## Table of Contents
 
 - [Overview](#overview)
+- [GitHub Action](#github-action)
 - [Core Features](#core-features)
 - [How the Workflow Works](#how-the-workflow-works)
 - [Detection Engine](#detection-engine)
@@ -22,6 +23,8 @@ The app runs completely on the client side. Your token is used at runtime in the
 
 This application is designed for users who want a safer and more transparent way to moderate their GitHub social graph.
 
+The repository now also includes a reusable GitHub Action entrypoint for teams that want scheduled or manually triggered spam detection and optional blocking without using the web UI.
+
 Instead of blindly auto-blocking, the app provides a review-first flow:
 
 1. Analyze followers and following accounts.
@@ -31,9 +34,83 @@ Instead of blindly auto-blocking, the app provides a review-first flow:
 
 The interface is built with Ant Design and Zustand state management, and it includes a detection sensitivity system (Aggressive, Balanced, Conservative) to tune strictness.
 
+## GitHub Action
+
+The root of this repository exposes a JavaScript GitHub Action so other repositories can call the blocking workflow directly.
+
+Consumers do not need to clone this repository. They can reference it directly from any workflow with `uses: sametcn99/gh-block-spam-accounts@ref`.
+
+### Action Inputs
+
+- `github-token` - required personal access token used for analysis and optional blocking
+- `detection-sensitivity` - `aggressive`, `balanced`, or `conservative` (default: `balanced`)
+- `custom-keywords` - comma or newline separated extra keywords
+- `target-type` - `followers`, `following`, or `both` (default: `both`)
+- `exclude-users` - comma or newline separated logins to skip
+- `apply-blocks` - `true` to execute blocks, `false` for dry-run (default: `false`)
+- `delay-ms` - delay between block requests in milliseconds (default: `750`)
+
+### Action Outputs
+
+- `authenticated-login`
+- `candidate-count`
+- `detected-count`
+- `detected-logins`
+- `blocked-count`
+- `blocked-logins`
+- `failed-count`
+- `failed-logins`
+- `can-read-blocked-users`
+- `rate-limit-remaining`
+- `rate-limit-reset-at`
+
+### Example Workflow
+
+```yaml
+name: Detect GitHub spam accounts
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply-blocks:
+        description: "Execute real block operations"
+        required: true
+        type: boolean
+        default: false
+  schedule:
+    - cron: "0 6 * * *"
+
+jobs:
+  spam-blocker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run spam blocker
+        uses: sametcn99/gh-block-spam-accounts@main
+        with:
+          github-token: ${{ secrets.SPAM_BLOCKER_TOKEN }}
+          detection-sensitivity: balanced
+          target-type: both
+          apply-blocks: ${{ github.event_name == 'workflow_dispatch' && inputs.apply-blocks || 'false' }}
+```
+
+A ready-to-copy remote usage example also exists in `examples/spam-blocker-remote.yml`.
+
+The repository also includes `.github/workflows/spam-blocker-example.yml` as a local self-test workflow for this repo. For real blocking, replace `${{ github.token }}` with a PAT secret such as `${{ secrets.SPAM_BLOCKER_TOKEN }}`.
+
+For external consumption, prefer a release tag such as `@v1` instead of `@main`.
+
+### Token Notes
+
+The repository `GITHUB_TOKEN` is usually not enough to block users. Use either:
+
+- a classic PAT with `user` scope
+- a fine-grained PAT with `Block another user: write`
+
 ## Core Features
 
 - Browser-only execution
+- GitHub Action dry-run mode for scheduled analysis
+- Optional GitHub Action blocking mode for reviewed automation
 - Runtime-only token handling (no persistence)
 - Follower + following analysis
 - Blocked-user list fetch (when token permissions allow)

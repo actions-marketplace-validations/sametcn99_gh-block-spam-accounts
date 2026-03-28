@@ -22,7 +22,8 @@ export function PageHeaderCard() {
         </Typography.Title>
         <Typography.Text type="secondary" style={{ maxWidth: 520, display: "inline-block" }}>
           Analyze your followers and following in-browser, review spam detections with clear
-          reasons, and block selected accounts — your token never leaves this tab.
+          reasons, and block selected accounts — your token never leaves this tab. Prefer
+          automation? The same detection flow can also run as a reusable GitHub Action.
         </Typography.Text>
       </Space>
     </div>

@@ -1,0 +1,59 @@
+name: "GitHub Spam Blocker"
+description: "Detect suspicious GitHub followers or following accounts and optionally block them."
+branding:
+  icon: shield
+  color: red
+inputs:
+  github-token:
+    description: "Personal access token used for analysis and optional blocking."
+    required: true
+  detection-sensitivity:
+    description: "Detection profile to use. Allowed values: aggressive, balanced, conservative."
+    required: false
+    default: balanced
+  custom-keywords:
+    description: "Comma or newline separated custom spam keywords."
+    required: false
+    default: ""
+  target-type:
+    description: "Which social graph to scan. Allowed values: followers, following, both."
+    required: false
+    default: both
+  exclude-users:
+    description: "Comma or newline separated logins to skip."
+    required: false
+    default: ""
+  apply-blocks:
+    description: "Set to true to execute block requests. False keeps the run in dry-run mode."
+    required: false
+    default: "false"
+  delay-ms:
+    description: "Delay between block requests in milliseconds."
+    required: false
+    default: "750"
+outputs:
+  authenticated-login:
+    description: "Login of the authenticated GitHub account."
+  candidate-count:
+    description: "Number of candidate accounts analyzed."
+  detected-count:
+    description: "Number of suspicious accounts detected."
+  detected-logins:
+    description: "JSON array of detected login names."
+  blocked-count:
+    description: "Number of successful block operations."
+  blocked-logins:
+    description: "JSON array of successfully blocked logins."
+  failed-count:
+    description: "Number of failed block attempts."
+  failed-logins:
+    description: "JSON array of failed block login names."
+  can-read-blocked-users:
+    description: "Whether the authenticated token could read the current block list."
+  rate-limit-remaining:
+    description: "Remaining requests from the latest authenticated user response."
+  rate-limit-reset-at:
+    description: "ISO timestamp for the current GitHub rate limit reset."
+runs:
+  using: node20
+  main: ./.github/actions/spam-blocker/index.js

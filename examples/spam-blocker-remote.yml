@@ -1,0 +1,99 @@
+name: Detect and optionally block GitHub spam accounts
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply-blocks:
+        description: "Set to true only after you trust the dry-run output"
+        required: true
+        type: boolean
+        default: false
+      detection-sensitivity:
+        description: "How strict the spam detection should be"
+        required: true
+        type: choice
+        default: balanced
+        options:
+          - aggressive
+          - balanced
+          - conservative
+      target-type:
+        description: "Which relationship graph to scan"
+        required: true
+        type: choice
+        default: both
+        options:
+          - followers
+          - following
+          - both
+      custom-keywords:
+        description: "Optional comma-separated or newline-separated extra keywords"
+        required: false
+        type: string
+      exclude-users:
+        description: "Optional comma-separated or newline-separated GitHub logins to skip"
+        required: false
+        type: string
+      delay-ms:
+        description: "Delay between block requests in milliseconds"
+        required: true
+        type: string
+        default: "750"
+  schedule:
+    - cron: "0 6 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spam-blocker-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  spam-blocker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run spam blocker
+        id: spam_blocker
+        uses: sametcn99/gh-block-spam-accounts@main
+        with:
+          # Use a classic PAT with `user` scope, or a fine-grained PAT with
+          # `Block another user: write` if you want real blocking to work.
+          github-token: ${{ secrets.SPAM_BLOCKER_TOKEN }}
+          detection-sensitivity: ${{ github.event_name == 'workflow_dispatch' && inputs['detection-sensitivity'] || 'balanced' }}
+          target-type: ${{ github.event_name == 'workflow_dispatch' && inputs['target-type'] || 'both' }}
+          custom-keywords: ${{ github.event_name == 'workflow_dispatch' && inputs['custom-keywords'] || '' }}
+          exclude-users: ${{ github.event_name == 'workflow_dispatch' && inputs['exclude-users'] || '' }}
+          apply-blocks: ${{ github.event_name == 'workflow_dispatch' && inputs['apply-blocks'] || 'false' }}
+          delay-ms: ${{ github.event_name == 'workflow_dispatch' && inputs['delay-ms'] || '750' }}
+
+      - name: Print action outputs
+        run: |
+          echo "Authenticated login: ${{ steps.spam_blocker.outputs.authenticated-login }}"
+          echo "Can read blocked users: ${{ steps.spam_blocker.outputs.can-read-blocked-users }}"
+          echo "Candidate count: ${{ steps.spam_blocker.outputs.candidate-count }}"
+          echo "Detected count: ${{ steps.spam_blocker.outputs.detected-count }}"
+          echo "Detected logins: ${{ steps.spam_blocker.outputs.detected-logins }}"
+          echo "Blocked count: ${{ steps.spam_blocker.outputs.blocked-count }}"
+          echo "Blocked logins: ${{ steps.spam_blocker.outputs.blocked-logins }}"
+          echo "Failed count: ${{ steps.spam_blocker.outputs.failed-count }}"
+          echo "Failed logins: ${{ steps.spam_blocker.outputs.failed-logins }}"
+          echo "Rate limit remaining: ${{ steps.spam_blocker.outputs.rate-limit-remaining }}"
+          echo "Rate limit reset at: ${{ steps.spam_blocker.outputs.rate-limit-reset-at }}"
+
+      - name: Add workflow summary
+        shell: bash
+        run: |
+          {
+            echo "## GitHub Spam Blocker"
+            echo ""
+            echo "- Authenticated login: ${{ steps.spam_blocker.outputs.authenticated-login }}"
+            echo "- Candidate count: ${{ steps.spam_blocker.outputs.candidate-count }}"
+            echo "- Detected count: ${{ steps.spam_blocker.outputs.detected-count }}"
+            echo "- Blocked count: ${{ steps.spam_blocker.outputs.blocked-count }}"
+            echo "- Failed count: ${{ steps.spam_blocker.outputs.failed-count }}"
+            echo ""
+            echo "### Detected logins"
+            echo '${{ steps.spam_blocker.outputs.detected-logins }}'
+          } >> "$GITHUB_STEP_SUMMARY"

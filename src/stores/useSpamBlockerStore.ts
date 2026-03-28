@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { buildCandidateLogins } from "../domain/shared/buildCandidateLogins";
 import { createLogEntry } from "../domain/shared/createLogEntry";
 import { extractRateLimitInfo } from "../domain/shared/extractRateLimitInfo";
 import { getErrorStatus } from "../domain/shared/getErrorStatus";
@@ -109,19 +110,6 @@ function toMessage(error: unknown): string {
   }
 
   return "Unexpected error.";
-}
-
-function buildCandidateLogins(
-  followers: string[],
-  following: string[],
-  blockedLogins: Set<string>,
-  authenticatedLogin: string,
-): string[] {
-  return [...followers, ...following].filter((login, index, logins) => {
-    return (
-      login !== authenticatedLogin && !blockedLogins.has(login) && logins.indexOf(login) === index
-    );
-  });
 }
 
 function createBlockPermissionMessage(login: string): string {
@@ -317,10 +305,11 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
       const followerLogins = followers.map((account) => account.login);
       const followingLogins = following.map((account) => account.login);
       const candidateLogins = buildCandidateLogins(
-        followerLogins,
-        followingLogins,
-        blockedResult.blockedLogins,
-        authenticatedUser.login,
+        [...followerLogins, ...followingLogins],
+        {
+          blockedLogins: blockedResult.blockedLogins,
+          authenticatedLogin: authenticatedUser.login,
+        },
       );
 
       set({

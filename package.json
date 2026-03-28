@@ -5,16 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && esbuild src/github-action/index.ts --bundle --platform=node --target=node20 --format=esm --outfile=.github/actions/spam-blocker/index.js",
+    "build:action": "esbuild src/github-action/index.ts --bundle --platform=node --target=node20 --format=esm --outfile=.github/actions/spam-blocker/index.js",
     "format": "biome format . --write",
     "lint": "biome lint .",
     "check": "bunx --bun @biomejs/biome check --write",
+    "check:action": "tsc -p tsconfig.action.json",
     "lint:eslint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
     "@ant-design/happy-work-theme": "^2.0.0",
-    "@ant-design/icons": "^6.1.0",
+    "@ant-design/icons": "^6.1.1",
     "@octokit/rest": "^22.0.1",
     "antd": "^6.3.4",
     "octokit": "^5.0.5",
@@ -23,6 +25,7 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@actions/core": "^3.0.0",
     "@babel/core": "^7.29.0",
     "@biomejs/biome": "^2.4.9",
     "@eslint/js": "^10.0.1",
@@ -33,12 +36,13 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "babel-plugin-react-compiler": "^1.0.0",
+    "esbuild": "^0.27.4",
     "eslint": "^10.1.0",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.57.2",
-    "vite": "^8.0.2"
+    "vite": "^8.0.3"
   }
 }
