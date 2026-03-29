@@ -3,3 +3,15 @@
   overflow-y: auto;
   padding-right: 8px;
 }
+
+.log-entry {
+  border-left: 2px solid transparent;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.log-entry:hover {
+  border-left-color: #7c3aed;
+  background: rgba(124, 58, 237, 0.04);
+}

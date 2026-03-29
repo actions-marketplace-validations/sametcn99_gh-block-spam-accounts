@@ -13,7 +13,13 @@ export function AnalysisProgressCard() {
   return (
     <Card title="Analysis Progress">
       <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-        <Progress percent={percent} status={analysisStatus === "error" ? "exception" : undefined} />
+        <div className={analysisStatus === "running" ? "progress-active" : undefined}>
+          <Progress
+            percent={percent}
+            strokeColor="#7c3aed"
+            status={analysisStatus === "error" ? "exception" : undefined}
+          />
+        </div>
         <Space size="large" wrap>
           <Statistic title="Followers" value={analysisProgress.followersCount} />
           <Statistic title="Following" value={analysisProgress.followingCount} />
@@ -25,6 +31,11 @@ export function AnalysisProgressCard() {
         </Space>
         {analysisStatus === "running" ? (
           <Alert showIcon type="info" message="Analysis is running in your browser." />
+        ) : null}
+        {analysisStatus === "completed" && percent === 100 ? (
+          <div className="success-alert">
+            <Alert showIcon type="success" message="Analysis completed successfully." />
+          </div>
         ) : null}
       </Space>
     </Card>

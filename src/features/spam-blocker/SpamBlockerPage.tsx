@@ -18,10 +18,10 @@ import { TokenCard } from "./components/TokenCard";
 import { sectionIds, type WorkflowStep, WorkflowSteps } from "./components/WorkflowSteps";
 
 const contentStyle: CSSProperties = {
-  maxWidth: 980,
+  maxWidth: 960,
   width: "100%",
   margin: "0 auto",
-  padding: 20,
+  padding: "24px 20px 40px",
 };
 
 function useCurrentStep(): WorkflowStep {
@@ -43,21 +43,37 @@ export function SpamBlockerPage() {
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      <Layout.Content style={contentStyle}>
+      <a href="#main-content" className="skip-to-content">
+        Skip to main content
+      </a>
+      <Layout.Content
+        id="main-content"
+        role="main"
+        aria-label="Spam blocker workspace"
+        style={contentStyle}
+      >
         <PageHeaderCard />
         <GitHubActionGuideCard />
         <WorkflowSteps currentStep={currentStep} />
         <StickyStatusBar />
 
-        <Space direction="vertical" size="large" style={{ width: "100%", marginTop: 16 }}>
+        <Space direction="vertical" size="large" style={{ width: "100%", marginTop: 20 }}>
           {/* Step 0: Connect */}
-          <div id={sectionIds[0]} className="fade-in">
+          <div
+            id={sectionIds[0]}
+            className="card-enter"
+            style={{ "--card-index": 0 } as CSSProperties}
+          >
             <TokenCard />
           </div>
 
           {/* Step 1: Configure – visible after auth */}
           {currentStep >= 1 && (
-            <div id={sectionIds[1]} className="fade-in">
+            <div
+              id={sectionIds[1]}
+              className="card-enter"
+              style={{ "--card-index": 1 } as CSSProperties}
+            >
               <Space direction="vertical" size="large" style={{ width: "100%" }}>
                 <AuthStatusCard />
                 <CustomKeywordsCard />
@@ -67,7 +83,11 @@ export function SpamBlockerPage() {
 
           {/* Step 2: Analyze – visible during / after analysis */}
           {currentStep >= 2 && (
-            <div id={sectionIds[2]} className="fade-in">
+            <div
+              id={sectionIds[2]}
+              className="card-enter"
+              style={{ "--card-index": 2 } as CSSProperties}
+            >
               <Space direction="vertical" size="large" style={{ width: "100%" }}>
                 <AnalysisProgressCard />
                 <RateLimitCard />
@@ -77,7 +97,11 @@ export function SpamBlockerPage() {
 
           {/* Step 3: Review – visible when detections exist */}
           {currentStep >= 3 && (
-            <div id={sectionIds[3]} className="fade-in">
+            <div
+              id={sectionIds[3]}
+              className="card-enter"
+              style={{ "--card-index": 3 } as CSSProperties}
+            >
               <Space direction="vertical" size="large" style={{ width: "100%" }}>
                 <InsightCards />
                 <DetectionsCard />
@@ -88,7 +112,11 @@ export function SpamBlockerPage() {
 
           {/* Step 4: Manage – visible after blocking started or completed */}
           {currentStep >= 4 && (
-            <div id={sectionIds[4]} className="fade-in">
+            <div
+              id={sectionIds[4]}
+              className="card-enter"
+              style={{ "--card-index": 4 } as CSSProperties}
+            >
               <BlockedUsersCard />
             </div>
           )}

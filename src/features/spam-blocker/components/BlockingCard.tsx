@@ -56,22 +56,28 @@ export function BlockingCard() {
           <Button
             type="primary"
             danger
+            className="cta-danger"
             loading={blockStatus === "running"}
             disabled={selectedLogins.length === 0 || unblockStatus === "running"}
           >
             Block Selected Accounts
           </Button>
         </Popconfirm>
-        <Progress
-          percent={blockPercent}
-          status={blockStatus === "error" ? "exception" : undefined}
-        />
+        <div className={blockStatus === "running" ? "progress-active" : undefined}>
+          <Progress
+            percent={blockPercent}
+            strokeColor="#7c3aed"
+            status={blockStatus === "error" ? "exception" : undefined}
+          />
+        </div>
         <Space>
           <Tag color="green">{`Succeeded: ${blockProgress.succeeded}`}</Tag>
           <Tag color="red">{`Failed: ${blockProgress.failed}`}</Tag>
         </Space>
         {blockStatus === "completed" && blockProgress.failed === 0 ? (
-          <Alert showIcon type="success" message="Blocking completed without failures." />
+          <div className="success-alert">
+            <Alert showIcon type="success" message="Blocking completed without failures." />
+          </div>
         ) : null}
         <List
           size="small"

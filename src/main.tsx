@@ -3,6 +3,8 @@ import { App as AntdApp, ConfigProvider } from "antd";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import "@fontsource-variable/plus-jakarta-sans";
+import "@fontsource-variable/dm-sans";
 import "./index.css";
 import { softAuroraTheme } from "./theme/softAuroraTheme";
 

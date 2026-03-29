@@ -4,17 +4,20 @@ import { useSpamBlockerStore } from "../../../stores/useSpamBlockerStore";
 
 const barStyle: CSSProperties = {
   position: "sticky",
-  top: 72,
+  top: 60,
   zIndex: 99,
-  background: "rgba(30, 41, 59, 0.92)",
-  backdropFilter: "blur(12px)",
-  borderRadius: 8,
-  border: "1px solid #334155",
-  padding: "10px 16px",
+  background: "rgba(17, 24, 39, 0.88)",
+  backdropFilter: "blur(16px)",
+  WebkitBackdropFilter: "blur(16px)",
+  borderRadius: 12,
+  border: "1px solid #1e293b",
+  padding: "8px 14px",
   display: "flex",
   flexWrap: "wrap",
   alignItems: "center",
-  gap: 12,
+  gap: 10,
+  transition: "box-shadow 0.3s ease",
+  boxShadow: "0 4px 24px rgba(0,0,0,0.25)",
 };
 
 function statusColor(status: string): string {
@@ -40,7 +43,13 @@ export function StickyStatusBar() {
   if (!authenticatedUser) return null;
 
   return (
-    <div style={barStyle}>
+    <div
+      className="sticky-status-bar"
+      role="status"
+      aria-live="polite"
+      aria-label="Analysis status"
+      style={barStyle}
+    >
       <Space size={6}>
         <Avatar src={authenticatedUser.avatarUrl} size={22} />
         <Typography.Text strong style={{ fontSize: 13 }}>

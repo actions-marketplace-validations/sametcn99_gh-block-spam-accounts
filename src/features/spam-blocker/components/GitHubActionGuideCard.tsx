@@ -1,5 +1,5 @@
 import { RocketOutlined } from "@ant-design/icons";
-import { Alert, Button, Card, Space, Tag, Typography } from "antd";
+import { Alert, Button, Collapse, Space, Tag, Typography } from "antd";
 import type { CSSProperties } from "react";
 import { siteMetadata } from "../../../content/siteMetadata";
 
@@ -40,19 +40,19 @@ const buttonRowStyle: CSSProperties = {
   gap: 8,
 };
 
-export function GitHubActionGuideCard() {
-  const remoteExampleUrl = `${siteMetadata.repositoryUrl}/blob/main/examples/spam-blocker-remote.yml`;
-  const readmeActionSectionUrl = `${siteMetadata.repositoryUrl}#github-action`;
-
-  return (
-    <Card
-      style={{ marginBottom: 16 }}
-      title={
-        <>
-          <RocketOutlined /> Use This Project As A GitHub Action
-        </>
-      }
-    >
+const collapseItems = (remoteExampleUrl: string, readmeActionSectionUrl: string) => [
+  {
+    key: "github-action-guide",
+    label: (
+      <Space>
+        <RocketOutlined style={{ color: "#a78bfa" }} />
+        <span style={{ fontWeight: 600 }}>Use This Project As A GitHub Action</span>
+        <Tag color="purple" style={{ marginLeft: 4, fontSize: 11 }}>
+          Optional
+        </Tag>
+      </Space>
+    ),
+    children: (
       <Space direction="vertical" size="middle" style={{ width: "100%" }}>
         <Alert
           type="info"
@@ -78,9 +78,9 @@ export function GitHubActionGuideCard() {
           <Typography.Paragraph style={{ marginBottom: 8 }}>
             Add a workflow in any repository and reference this action with a release tag such as{" "}
             <Typography.Text code>sametcn99/gh-block-spam-accounts@main</Typography.Text>. The
-            action will authenticate with your token, collect followers, following accounts, or
-            both depending on your configuration, apply the same spam detection rules used by the
-            web app, and optionally send block requests when{" "}
+            action will authenticate with your token, collect followers, following accounts, or both
+            depending on your configuration, apply the same spam detection rules used by the web
+            app, and optionally send block requests when{" "}
             <Typography.Text code>apply-blocks</Typography.Text> is enabled.
           </Typography.Paragraph>
           <Typography.Paragraph style={{ marginBottom: 0 }}>
@@ -105,7 +105,7 @@ export function GitHubActionGuideCard() {
             <Typography.Text code>GITHUB_TOKEN</Typography.Text> is usually not enough for blocking.
           </Typography.Paragraph>
           <Typography.Paragraph style={{ marginBottom: 0 }}>
-            Recommended inputs are{" "}<Typography.Text code>detection-sensitivity</Typography.Text>,{" "}
+            Recommended inputs are <Typography.Text code>detection-sensitivity</Typography.Text>,{" "}
             <Typography.Text code>target-type</Typography.Text>,{" "}
             <Typography.Text code>custom-keywords</Typography.Text>, and{" "}
             <Typography.Text code>delay-ms</Typography.Text>. Keep the action pinned to a stable
@@ -122,6 +122,19 @@ export function GitHubActionGuideCard() {
           </Button>
         </div>
       </Space>
-    </Card>
+    ),
+  },
+];
+
+export function GitHubActionGuideCard() {
+  const remoteExampleUrl = `${siteMetadata.repositoryUrl}/blob/main/examples/spam-blocker-remote.yml`;
+  const readmeActionSectionUrl = `${siteMetadata.repositoryUrl}#github-action`;
+
+  return (
+    <Collapse
+      ghost
+      style={{ marginBottom: 16 }}
+      items={collapseItems(remoteExampleUrl, readmeActionSectionUrl)}
+    />
   );
 }

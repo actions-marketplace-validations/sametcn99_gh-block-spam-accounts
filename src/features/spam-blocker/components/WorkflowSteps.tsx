@@ -30,8 +30,8 @@ const containerStyle: CSSProperties = {
   position: "sticky",
   top: 0,
   zIndex: 100,
-  background: "linear-gradient(180deg, #0f172a 60%, transparent 100%)",
-  padding: "16px 0 24px",
+  background: "linear-gradient(180deg, #0a0e1a 60%, transparent 100%)",
+  padding: "12px 0 20px",
 };
 
 interface WorkflowStepsProps {
@@ -49,7 +49,7 @@ export function WorkflowSteps({ currentStep }: WorkflowStepsProps) {
   }
 
   return (
-    <div style={containerStyle}>
+    <nav className="workflow-steps-container" aria-label="Workflow progress" style={containerStyle}>
       <Steps
         current={currentStep}
         size="small"
@@ -60,7 +60,7 @@ export function WorkflowSteps({ currentStep }: WorkflowStepsProps) {
         }))}
         responsive={false}
       />
-    </div>
+    </nav>
   );
 }
 

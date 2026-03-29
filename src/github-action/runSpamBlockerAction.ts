@@ -160,11 +160,7 @@ export async function runSpamBlockerAction(
   const profiles = await fetchProfiles(octokit, candidateLogins, {
     onProfileProcessed: (processedProfiles, totalProfiles) => {
       if (processedProfiles === totalProfiles || processedProfiles % 25 === 0) {
-        logMessage(
-          logger,
-          "info",
-          `Fetched ${processedProfiles}/${totalProfiles} profile(s).`,
-        );
+        logMessage(logger, "info", `Fetched ${processedProfiles}/${totalProfiles} profile(s).`);
       }
     },
   });

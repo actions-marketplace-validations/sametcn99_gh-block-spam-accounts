@@ -304,13 +304,10 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
 
       const followerLogins = followers.map((account) => account.login);
       const followingLogins = following.map((account) => account.login);
-      const candidateLogins = buildCandidateLogins(
-        [...followerLogins, ...followingLogins],
-        {
-          blockedLogins: blockedResult.blockedLogins,
-          authenticatedLogin: authenticatedUser.login,
-        },
-      );
+      const candidateLogins = buildCandidateLogins([...followerLogins, ...followingLogins], {
+        blockedLogins: blockedResult.blockedLogins,
+        authenticatedLogin: authenticatedUser.login,
+      });
 
       set({
         canReadBlockedUsers: blockedResult.canReadBlockList,

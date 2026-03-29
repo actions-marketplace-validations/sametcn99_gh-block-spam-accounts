@@ -128,6 +128,7 @@ export function BlockedUsersCard() {
           >
             <Button
               type="primary"
+              className="cta-primary"
               disabled={selectedBlockedUserLogins.length === 0 || isBusy}
               loading={unblockStatus === "running"}
             >
@@ -136,10 +137,13 @@ export function BlockedUsersCard() {
           </Popconfirm>
         </Space>
 
-        <Progress
-          percent={unblockPercent}
-          status={unblockStatus === "error" ? "exception" : undefined}
-        />
+        <div className={unblockStatus === "running" ? "progress-active" : undefined}>
+          <Progress
+            percent={unblockPercent}
+            strokeColor="#7c3aed"
+            status={unblockStatus === "error" ? "exception" : undefined}
+          />
+        </div>
 
         <Space>
           <Tag color="green">{`Succeeded: ${unblockProgress.succeeded}`}</Tag>
@@ -149,7 +153,9 @@ export function BlockedUsersCard() {
         {unblockStatus === "completed" &&
         unblockProgress.failed === 0 &&
         unblockProgress.total > 0 ? (
-          <Alert showIcon type="success" message="Unblocking completed without failures." />
+          <div className="success-alert">
+            <Alert showIcon type="success" message="Unblocking completed without failures." />
+          </div>
         ) : null}
 
         <Table<BlockedUserRow>
@@ -159,7 +165,7 @@ export function BlockedUsersCard() {
           locale={{
             emptyText: (
               <Empty
-                image={<CheckCircleOutlined style={{ fontSize: 36, color: "#475569" }} />}
+                image={<CheckCircleOutlined style={{ fontSize: 36, color: "#4b5563" }} />}
                 description="No blocked accounts found"
               />
             ),

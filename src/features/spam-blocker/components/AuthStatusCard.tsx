@@ -1,15 +1,29 @@
-import { Alert, Avatar, Card, Descriptions, Space, Tag, Typography } from "antd";
+import { Alert, Avatar, Card, Descriptions, Skeleton, Space, Tag, Typography } from "antd";
 import { useSpamBlockerStore } from "../../../stores/useSpamBlockerStore";
 
 export function AuthStatusCard() {
   const authenticatedUser = useSpamBlockerStore((state) => state.authenticatedUser);
+  const connectionStatus = useSpamBlockerStore((state) => state.connectionStatus);
   const oauthScopes = useSpamBlockerStore((state) => state.oauthScopes);
   const scopeWarning = useSpamBlockerStore((state) => state.scopeWarning);
   const canReadBlockedUsers = useSpamBlockerStore((state) => state.canReadBlockedUsers);
 
+  const isConnecting = connectionStatus === "running" && !authenticatedUser;
+
   return (
     <Card title="Authentication">
-      {authenticatedUser ? (
+      {isConnecting ? (
+        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+          <Space>
+            <Skeleton.Avatar active size={48} shape="circle" />
+            <Space direction="vertical" size={0}>
+              <Skeleton.Input active size="small" style={{ width: 120 }} />
+              <Skeleton.Input active size="small" style={{ width: 80, marginTop: 4 }} />
+            </Space>
+          </Space>
+          <Skeleton active paragraph={{ rows: 2 }} title={false} />
+        </Space>
+      ) : authenticatedUser ? (
         <Space direction="vertical" size="middle" style={{ width: "100%" }}>
           <Space>
             <Avatar src={authenticatedUser.avatarUrl} size={48} />
@@ -28,7 +42,7 @@ export function AuthStatusCard() {
               {canReadBlockedUsers ? "Readable" : "Unavailable for this token"}
             </Descriptions.Item>
           </Descriptions>
-          <Tag color="cyan">All user-facing text in this interface is English-only.</Tag>
+          <Tag color="purple">All user-facing text in this interface is English-only.</Tag>
           {scopeWarning ? <Alert type="warning" showIcon message={scopeWarning} /> : null}
         </Space>
       ) : (

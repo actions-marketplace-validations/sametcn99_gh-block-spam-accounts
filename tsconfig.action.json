@@ -18,10 +18,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": [
-    "src/github-action/**/*",
-    "src/domain/**/*",
-    "src/services/**/*",
-    "src/types/**/*"
-  ]
+  "include": ["src/github-action/**/*", "src/domain/**/*", "src/services/**/*", "src/types/**/*"]
 }

@@ -1,10 +1,10 @@
 import * as core from "@actions/core";
+import type { DetectionSensitivity } from "../types/spam";
 import {
-  runSpamBlockerAction,
   type ActionLogLevel,
   type ActionTargetType,
+  runSpamBlockerAction,
 } from "./runSpamBlockerAction";
-import type { DetectionSensitivity } from "../types/spam";
 
 const VALID_SENSITIVITIES = ["aggressive", "balanced", "conservative"] as const;
 const VALID_TARGET_TYPES = ["followers", "following", "both"] as const;
@@ -52,7 +52,9 @@ function parseTargetType(): ActionTargetType {
     return input as ActionTargetType;
   }
 
-  throw new Error(`target-type must be one of: ${VALID_TARGET_TYPES.join(", ")}. Received: ${input}`);
+  throw new Error(
+    `target-type must be one of: ${VALID_TARGET_TYPES.join(", ")}. Received: ${input}`,
+  );
 }
 
 function log(level: ActionLogLevel, message: string): void {
@@ -71,7 +73,9 @@ function log(level: ActionLogLevel, message: string): void {
   }
 }
 
-async function writeSummary(result: Awaited<ReturnType<typeof runSpamBlockerAction>>): Promise<void> {
+async function writeSummary(
+  result: Awaited<ReturnType<typeof runSpamBlockerAction>>,
+): Promise<void> {
   await core.summary.clear();
 
   await core.summary

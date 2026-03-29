@@ -1,4 +1,10 @@
-import { Button, Card, Input, Segmented, Space, Tag, Typography } from "antd";
+import {
+  AuditOutlined,
+  SafetyCertificateOutlined,
+  SecurityScanOutlined,
+  TagOutlined,
+} from "@ant-design/icons";
+import { Badge, Button, Card, Input, Segmented, Space, Tag, Typography } from "antd";
 import { useState } from "react";
 import { useSpamBlockerStore } from "../../../stores/useSpamBlockerStore";
 import type { DetectionSensitivity } from "../../../types/spam";
@@ -11,8 +17,25 @@ export function CustomKeywordsCard() {
   const addCustomKeyword = useSpamBlockerStore((state) => state.addCustomKeyword);
   const removeCustomKeyword = useSpamBlockerStore((state) => state.removeCustomKeyword);
 
+  const handleAdd = () => {
+    const trimmed = keywordDraft.trim();
+    if (!trimmed) return;
+    addCustomKeyword(trimmed);
+    setKeywordDraft("");
+  };
+
   return (
-    <Card title="Session Keywords">
+    <Card
+      title={
+        <Space>
+          <TagOutlined style={{ color: "#7c3aed" }} />
+          <span>Session Keywords</span>
+          {customKeywords.length > 0 && (
+            <Badge count={customKeywords.length} style={{ backgroundColor: "#7c3aed" }} />
+          )}
+        </Space>
+      }
+    >
       <Space direction="vertical" size="middle" style={{ width: "100%" }}>
         <Typography.Text type="secondary">
           Add temporary detection keywords for this browser session. They are not saved and
@@ -24,9 +47,30 @@ export function CustomKeywordsCard() {
             block
             value={detectionSensitivity}
             options={[
-              { label: "Aggressive", value: "aggressive" },
-              { label: "Balanced", value: "balanced" },
-              { label: "Conservative", value: "conservative" },
+              {
+                label: (
+                  <Space size={4}>
+                    <SecurityScanOutlined /> Aggressive
+                  </Space>
+                ),
+                value: "aggressive",
+              },
+              {
+                label: (
+                  <Space size={4}>
+                    <AuditOutlined /> Balanced
+                  </Space>
+                ),
+                value: "balanced",
+              },
+              {
+                label: (
+                  <Space size={4}>
+                    <SafetyCertificateOutlined /> Conservative
+                  </Space>
+                ),
+                value: "conservative",
+              },
             ]}
             onChange={(value) => {
               setDetectionSensitivity(value);
@@ -43,18 +87,9 @@ export function CustomKeywordsCard() {
             onChange={(event) => {
               setKeywordDraft(event.target.value);
             }}
-            onPressEnter={() => {
-              addCustomKeyword(keywordDraft);
-              setKeywordDraft("");
-            }}
+            onPressEnter={handleAdd}
           />
-          <Button
-            type="primary"
-            onClick={() => {
-              addCustomKeyword(keywordDraft);
-              setKeywordDraft("");
-            }}
-          >
+          <Button type="primary" onClick={handleAdd}>
             Add Keyword
           </Button>
         </Space.Compact>
@@ -67,7 +102,8 @@ export function CustomKeywordsCard() {
                 event.preventDefault();
                 removeCustomKeyword(keyword);
               }}
-              color="blue"
+              color="purple"
+              className="keyword-tag"
             >
               {keyword}
             </Tag>

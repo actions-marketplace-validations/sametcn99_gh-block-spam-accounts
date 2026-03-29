@@ -1,6 +1,6 @@
-import { SearchOutlined } from "@ant-design/icons";
+import { ExclamationCircleOutlined, SearchOutlined } from "@ant-design/icons";
 import type { TableColumnsType } from "antd";
-import { Button, Card, Empty, Space, Table, Tag, Typography } from "antd";
+import { Button, Card, Empty, Skeleton, Space, Table, Tag, Tooltip, Typography } from "antd";
 import { useSpamBlockerStore } from "../../../stores/useSpamBlockerStore";
 import type { DetectionSensitivity, SpamDetection } from "../../../types/spam";
 
@@ -16,10 +16,32 @@ function getSensitivityMeta(sensitivity: DetectionSensitivity): { label: string;
   return { label: "Balanced", color: "blue" };
 }
 
+function SpamScore({ count }: { count: number }) {
+  const level = count >= 4 ? "high" : count >= 2 ? "medium" : "low";
+  const color = level === "high" ? "#ef4444" : level === "medium" ? "#f59e0b" : "#6b7280";
+  return (
+    <Tooltip title={`${count} detection reason${count !== 1 ? "s" : ""}`}>
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 4,
+          color,
+          fontWeight: 600,
+          fontSize: 13,
+        }}
+      >
+        <ExclamationCircleOutlined /> {count}
+      </span>
+    </Tooltip>
+  );
+}
+
 const columns: TableColumnsType<SpamDetection> = [
   {
     title: "Login",
     key: "login",
+    width: 160,
     render: (_, detection) => (
       <Typography.Link
         href={`https://github.com/${detection.profile.login}`}
@@ -33,6 +55,7 @@ const columns: TableColumnsType<SpamDetection> = [
   {
     title: "Profile summary",
     key: "profileSummary",
+    ellipsis: true,
     render: (_, detection) => {
       const summary =
         detection.profile.bio ??
@@ -41,8 +64,22 @@ const columns: TableColumnsType<SpamDetection> = [
         detection.profile.location ??
         "No public bio or profile text";
 
-      return <Typography.Text type="secondary">{summary}</Typography.Text>;
+      return (
+        <Tooltip title={summary} placement="topLeft">
+          <Typography.Text type="secondary" ellipsis style={{ maxWidth: 260 }}>
+            {summary}
+          </Typography.Text>
+        </Tooltip>
+      );
     },
+  },
+  {
+    title: "Score",
+    key: "spamScore",
+    width: 80,
+    sorter: (a, b) => a.matchedReasons.length - b.matchedReasons.length,
+    defaultSortOrder: "descend",
+    render: (_, detection) => <SpamScore count={detection.matchedReasons.length} />,
   },
   {
     title: "Detection reasons",
@@ -66,7 +103,10 @@ export function DetectionsCard() {
   const selectedLogins = useSpamBlockerStore((state) => state.selectedLogins);
   const setSelectedLogins = useSpamBlockerStore((state) => state.setSelectedLogins);
   const selectAllDetections = useSpamBlockerStore((state) => state.selectAllDetections);
+  const analysisStatus = useSpamBlockerStore((state) => state.analysisStatus);
   const sensitivityMeta = getSensitivityMeta(detectionSensitivity);
+
+  const isAnalyzing = analysisStatus === "running" && detections.length === 0;
 
   return (
     <Card title="Detected Accounts">
@@ -82,26 +122,31 @@ export function DetectionsCard() {
             Clear Selection
           </Button>
         </Space>
-        <Table<SpamDetection>
-          rowKey={(detection) => detection.profile.login}
-          columns={columns}
-          dataSource={detections}
-          locale={{
-            emptyText: (
-              <Empty
-                image={<SearchOutlined style={{ fontSize: 36, color: "#475569" }} />}
-                description="Run an analysis to detect spam accounts"
-              />
-            ),
-          }}
-          rowSelection={{
-            selectedRowKeys: selectedLogins,
-            onChange: (keys) => {
-              setSelectedLogins(keys.map((key) => String(key)));
-            },
-          }}
-          pagination={{ pageSize: 8 }}
-        />
+        {isAnalyzing ? (
+          <Skeleton active paragraph={{ rows: 5 }} title={false} />
+        ) : (
+          <Table<SpamDetection>
+            className="detection-table"
+            rowKey={(detection) => detection.profile.login}
+            columns={columns}
+            dataSource={detections}
+            locale={{
+              emptyText: (
+                <Empty
+                  image={<SearchOutlined style={{ fontSize: 36, color: "#4b5563" }} />}
+                  description="Run an analysis to detect spam accounts"
+                />
+              ),
+            }}
+            rowSelection={{
+              selectedRowKeys: selectedLogins,
+              onChange: (keys) => {
+                setSelectedLogins(keys.map((key) => String(key)));
+              },
+            }}
+            pagination={{ pageSize: 8 }}
+          />
+        )}
       </Space>
     </Card>
   );
