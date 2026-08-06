@@ -56,7 +56,7 @@ jobs:
     steps:
       - name: Run spam blocker
         id: spam_blocker
-        uses: sametcn99/gh-block-spam-accounts@1.1
+        uses: sametcn99/gh-block-spam-accounts@1.2
         with:
           # Use a classic PAT with `user` scope, or a fine-grained PAT with
           # `Block another user: write` if you want real blocking to work.

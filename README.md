@@ -106,7 +106,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run spam blocker
-        uses: sametcn99/gh-block-spam-accounts@1.1
+        uses: sametcn99/gh-block-spam-accounts@1.2
         with:
           github-token: ${{ secrets.SPAM_BLOCKER_TOKEN }}
           detection-sensitivity: ${{ github.event_name == 'workflow_dispatch' && inputs['detection-sensitivity'] || 'balanced' }}
@@ -118,7 +118,7 @@ A ready-to-copy remote usage example also exists in `examples/spam-blocker-remot
 
 The repository also includes `./spam-blocker.example.yml` as a local self-test workflow for this repo. For real blocking, replace `${{ github.token }}` with a PAT secret such as `${{ secrets.SPAM_BLOCKER_TOKEN }}`.
 
-For external consumption, use the pinned release tag `@1.1` instead of `@main`.
+For external consumption, use the pinned release tag `@1.2` instead of `@main`.
 
 ### Token Notes
 
