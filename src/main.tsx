@@ -6,9 +6,9 @@ import App from "./App";
 import "@fontsource-variable/plus-jakarta-sans";
 import "@fontsource-variable/dm-sans";
 import "./index.css";
-import { softAuroraTheme } from "./theme/softAuroraTheme";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
+import { softAuroraTheme } from "./theme/softAuroraTheme";
 
 const rootElement = document.getElementById("root");
 

@@ -21,6 +21,17 @@ type DetectionThresholdProfile = {
 const bioHandlePattern = /@[a-z\d](?:[a-z\d-]{0,38})/gi;
 const alternateAccountBioPattern =
   /\b(?:main|alt|backup|private|priv|locked|second|other|new|old|real|personal)(?:\s+(?:account|acc|profile))?\b/i;
+const ONE_MONTH_IN_MILLISECONDS = 30 * 24 * 60 * 60 * 1000;
+
+function isRecentlyCreatedAccount(createdAt: string, now: number): boolean {
+  const createdAtTime = Date.parse(createdAt);
+
+  if (Number.isNaN(createdAtTime) || createdAtTime > now) {
+    return false;
+  }
+
+  return createdAtTime >= now - ONE_MONTH_IN_MILLISECONDS;
+}
 
 function getThresholdProfile(sensitivity: DetectionSensitivity): DetectionThresholdProfile {
   if (sensitivity === "aggressive") {
@@ -247,6 +258,7 @@ export function detectSpamProfiles(
   const rules = buildSpamRules(customKeywords);
   const thresholds = getThresholdProfile(sensitivity);
   const detections: SpamDetection[] = [];
+  const now = Date.now();
 
   for (const profile of profiles) {
     const rawProfileDetails = buildRawProfileDetails(profile);
@@ -281,6 +293,14 @@ export function detectSpamProfiles(
       appendSignal(signalMap, {
         reason: "main: @...",
         weight: 4,
+        isStrongSignal: true,
+      });
+    }
+
+    if (profile.following > 1000 && isRecentlyCreatedAccount(profile.createdAt, now)) {
+      appendSignal(signalMap, {
+        reason: "account created within the last month and follows more than 1000 accounts",
+        weight: 5,
         isStrongSignal: true,
       });
     }

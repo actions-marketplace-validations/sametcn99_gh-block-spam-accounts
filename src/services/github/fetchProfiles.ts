@@ -27,6 +27,7 @@ export async function fetchProfiles(
 
           return {
             login: data.login,
+            createdAt: data.created_at,
             name: data.name,
             bio: data.bio,
             company: "company" in data ? data.company : null,

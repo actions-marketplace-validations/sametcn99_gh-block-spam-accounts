@@ -4,6 +4,7 @@ export type GitHubAccount = {
 
 export type GitHubProfile = {
   login: string;
+  createdAt: string;
   name: string | null;
   bio: string | null;
   company: string | null;

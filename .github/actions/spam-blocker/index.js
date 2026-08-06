@@ -20841,6 +20841,14 @@ function buildSpamRules(customKeywords) {
 // src/domain/spam/detectSpamProfiles.ts
 var bioHandlePattern = /@[a-z\d](?:[a-z\d-]{0,38})/gi;
 var alternateAccountBioPattern = /\b(?:main|alt|backup|private|priv|locked|second|other|new|old|real|personal)(?:\s+(?:account|acc|profile))?\b/i;
+var ONE_MONTH_IN_MILLISECONDS = 30 * 24 * 60 * 60 * 1e3;
+function isRecentlyCreatedAccount(createdAt, now) {
+  const createdAtTime = Date.parse(createdAt);
+  if (Number.isNaN(createdAtTime) || createdAtTime > now) {
+    return false;
+  }
+  return createdAtTime >= now - ONE_MONTH_IN_MILLISECONDS;
+}
 function getThresholdProfile(sensitivity) {
   if (sensitivity === "aggressive") {
     return {
@@ -21006,6 +21014,7 @@ function detectSpamProfiles(profiles, customKeywords, sensitivity) {
   const rules = buildSpamRules(customKeywords);
   const thresholds = getThresholdProfile(sensitivity);
   const detections = [];
+  const now = Date.now();
   for (const profile of profiles) {
     const rawProfileDetails = buildRawProfileDetails(profile);
     const normalizedProfileDetails = buildNormalizedProfileDetails(profile);
@@ -21029,6 +21038,13 @@ function detectSpamProfiles(profiles, customKeywords, sensitivity) {
       appendSignal(signalMap, {
         reason: "main: @...",
         weight: 4,
+        isStrongSignal: true
+      });
+    }
+    if (profile.following > 1e3 && isRecentlyCreatedAccount(profile.createdAt, now)) {
+      appendSignal(signalMap, {
+        reason: "account created within the last month and follows more than 1000 accounts",
+        weight: 5,
         isStrongSignal: true
       });
     }
@@ -27968,6 +27984,7 @@ async function fetchProfiles(octokit, logins, options) {
           });
           return {
             login: data.login,
+            createdAt: data.created_at,
             name: data.name,
             bio: data.bio,
             company: "company" in data ? data.company : null,
