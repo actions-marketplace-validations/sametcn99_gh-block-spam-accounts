@@ -258,15 +258,37 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
         }
       }
 
+      const blockedResult = await fetchBlockedLogins(octokit);
+
       set({
         connectionStatus: "completed",
         authenticatedUser: authResponse.user,
         oauthScopes: authResponse.oauthScopes,
         scopeWarning,
+        canReadBlockedUsers: blockedResult.canReadBlockList,
+        blockedUserLogins: blockedResult.blockedUserLogins,
+        blockedUserProfiles: {},
+        selectedBlockedUserLogins: [],
         rateLimit: rateLimitInfo,
       });
 
       appendLog(set, "success", "auth", `Connected as @${authResponse.user.login}.`);
+
+      if (blockedResult.canReadBlockList) {
+        appendLog(
+          set,
+          "success",
+          "auth",
+          `Loaded ${blockedResult.blockedUserLogins.length} blocked account(s).`,
+        );
+      } else {
+        appendLog(
+          set,
+          "warning",
+          "auth",
+          "Could not read blocked accounts. The token may need blocked-users read access.",
+        );
+      }
 
       if (scopeWarning) {
         appendLog(set, "warning", "auth", scopeWarning);
