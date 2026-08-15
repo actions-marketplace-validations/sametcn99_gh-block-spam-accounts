@@ -1,6 +1,8 @@
 import { Layout, Space } from "antd";
 import type { CSSProperties } from "react";
+import { useState, type ReactNode } from "react";
 import { AnalysisProgressCard } from "./components/AnalysisProgressCard";
+import { AppWorkspaceHeader } from "./components/AppWorkspaceHeader";
 import { AuthStatusCard } from "./components/AuthStatusCard";
 import { BlockedUsersCard } from "./components/BlockedUsersCard";
 import { BlockingCard } from "./components/BlockingCard";
@@ -12,17 +14,40 @@ import { InsightCards } from "./components/InsightCards";
 import { PageHeaderCard } from "./components/PageHeaderCard";
 import { RateLimitCard } from "./components/RateLimitCard";
 import { RuntimeLogsCard } from "./components/RuntimeLogsCard";
-import { StickyStatusBar } from "./components/StickyStatusBar";
+import { FollowersCard, FollowingCard } from "./components/SocialAccountsCard";
 import { TokenCard } from "./components/TokenCard";
+import { WorkspaceNavigation, type WorkspaceView } from "./components/WorkspaceNavigation";
+import { useSpamBlockerStore } from "../../stores/useSpamBlockerStore";
 
 const contentStyle: CSSProperties = {
-  maxWidth: 960,
   width: "100%",
-  margin: "0 auto",
   padding: "24px 20px 40px",
 };
 
 export function SpamBlockerPage() {
+  const [activeView, setActiveView] = useState<WorkspaceView>("dashboard");
+  const authenticatedUser = useSpamBlockerStore((state) => state.authenticatedUser);
+
+  if (!authenticatedUser) {
+    return (
+      <Layout className="landing-layout" style={{ minHeight: "100vh" }}>
+        <a href="#main-content" className="skip-to-content">
+          Skip to main content
+        </a>
+        <Layout.Content id="main-content" role="main" aria-label="Connect your GitHub account">
+          <div className="landing-content">
+            <PageHeaderCard />
+            <div className="landing-connect-card">
+              <TokenCard />
+            </div>
+            <GitHubActionGuideCard />
+            <ContributionCard />
+          </div>
+        </Layout.Content>
+      </Layout>
+    );
+  }
+
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <a href="#main-content" className="skip-to-content">
@@ -34,45 +59,51 @@ export function SpamBlockerPage() {
         aria-label="Spam blocker workspace"
         style={contentStyle}
       >
-        <PageHeaderCard />
-        <GitHubActionGuideCard />
-        <StickyStatusBar />
+        <AppWorkspaceHeader />
+        <WorkspaceNavigation activeView={activeView} onViewChange={setActiveView} />
 
         <Space direction="vertical" size="large" style={{ width: "100%", marginTop: 20 }}>
-          <div className="card-enter" style={{ "--card-index": 0 } as CSSProperties}>
-            <TokenCard />
-          </div>
-
-          <div className="card-enter" style={{ "--card-index": 1 } as CSSProperties}>
-            <Space direction="vertical" size="large" style={{ width: "100%" }}>
+          {activeView === "dashboard" ? (
+            <ViewSection>
               <AuthStatusCard />
-              <CustomKeywordsCard />
-            </Space>
-          </div>
-
-          <div className="card-enter" style={{ "--card-index": 2 } as CSSProperties}>
-            <Space direction="vertical" size="large" style={{ width: "100%" }}>
-              <AnalysisProgressCard />
-              <RateLimitCard />
-            </Space>
-          </div>
-
-          <div className="card-enter" style={{ "--card-index": 3 } as CSSProperties}>
-            <Space direction="vertical" size="large" style={{ width: "100%" }}>
               <InsightCards />
+              <Space direction="vertical" size="large" style={{ width: "100%" }}>
+                <AnalysisProgressCard />
+                <RateLimitCard />
+              </Space>
+            </ViewSection>
+          ) : null}
+
+          {activeView === "analysis" ? (
+            <ViewSection>
+              <CustomKeywordsCard />
+              <AnalysisProgressCard />
               <DetectionsCard />
               <BlockingCard />
-            </Space>
-          </div>
+            </ViewSection>
+          ) : null}
 
-          <div className="card-enter" style={{ "--card-index": 4 } as CSSProperties}>
-            <BlockedUsersCard />
-          </div>
+          {activeView === "followers" ? <ViewSection><FollowersCard /></ViewSection> : null}
+          {activeView === "following" ? <ViewSection><FollowingCard /></ViewSection> : null}
+          {activeView === "blocked" ? <ViewSection><BlockedUsersCard /></ViewSection> : null}
 
-          <ContributionCard />
-          <RuntimeLogsCard />
+          {activeView === "activity" ? (
+            <ViewSection>
+              <RuntimeLogsCard />
+            </ViewSection>
+          ) : null}
         </Space>
       </Layout.Content>
     </Layout>
+  );
+}
+
+function ViewSection({ children }: { children: ReactNode }) {
+  return (
+    <div className="workspace-view" style={{ "--card-index": 0 } as CSSProperties}>
+      <Space direction="vertical" size="large" style={{ width: "100%" }}>
+        {children}
+      </Space>
+    </div>
   );
 }

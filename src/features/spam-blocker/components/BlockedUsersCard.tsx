@@ -14,7 +14,7 @@ import {
   Tooltip,
   Typography,
 } from "antd";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useSpamBlockerStore } from "../../../stores/useSpamBlockerStore";
 import type { GitHubProfile } from "../../../types/github";
 
@@ -174,6 +174,7 @@ export function BlockedUsersCard() {
   );
   const selectAllBlockedUsers = useSpamBlockerStore((state) => state.selectAllBlockedUsers);
   const unblockSelectedAccounts = useSpamBlockerStore((state) => state.unblockSelectedAccounts);
+  const [pageSize, setPageSize] = useState(8);
 
   const isBusy = blockStatus === "running" || unblockStatus === "running";
 
@@ -277,7 +278,13 @@ export function BlockedUsersCard() {
               setSelectedBlockedUserLogins(keys.map((key) => String(key)));
             },
           }}
-          pagination={{ pageSize: 8 }}
+          pagination={{
+            pageSize,
+            showSizeChanger: true,
+            pageSizeOptions: [8, 16, 32, 64],
+            showTotal: (total) => `${total} accounts`,
+            onChange: (_, nextPageSize) => setPageSize(nextPageSize),
+          }}
         />
 
         <List

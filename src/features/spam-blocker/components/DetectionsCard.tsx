@@ -1,6 +1,7 @@
 import { ExclamationCircleOutlined, SearchOutlined } from "@ant-design/icons";
 import type { TableColumnsType } from "antd";
 import { Button, Card, Empty, Skeleton, Space, Table, Tag, Tooltip, Typography } from "antd";
+import { useState } from "react";
 import { useSpamBlockerStore } from "../../../stores/useSpamBlockerStore";
 import type { DetectionSensitivity, SpamDetection } from "../../../types/spam";
 
@@ -164,6 +165,7 @@ export function DetectionsCard() {
   const setSelectedLogins = useSpamBlockerStore((state) => state.setSelectedLogins);
   const selectAllDetections = useSpamBlockerStore((state) => state.selectAllDetections);
   const analysisStatus = useSpamBlockerStore((state) => state.analysisStatus);
+  const [pageSize, setPageSize] = useState(8);
   const sensitivityMeta = getSensitivityMeta(detectionSensitivity);
 
   const isAnalyzing = analysisStatus === "running" && detections.length === 0;
@@ -205,7 +207,13 @@ export function DetectionsCard() {
                 setSelectedLogins(keys.map((key) => String(key)));
               },
             }}
-            pagination={{ pageSize: 8 }}
+            pagination={{
+              pageSize,
+              showSizeChanger: true,
+              pageSizeOptions: [8, 16, 32, 64],
+              showTotal: (total) => `${total} accounts`,
+              onChange: (_, nextPageSize) => setPageSize(nextPageSize),
+            }}
           />
         )}
       </Space>

@@ -2,7 +2,6 @@ import { CodeOutlined, CopyOutlined, FilterOutlined } from "@ant-design/icons";
 import {
   Badge,
   Button,
-  Collapse,
   List,
   message,
   Segmented,
@@ -84,81 +83,59 @@ export function RuntimeLogsCard() {
   );
 
   return (
-    <Collapse
-      ghost
-      items={[
-        {
-          key: "logs",
-          label,
-          children: (
-            <>
-              <Space
-                style={{
-                  marginBottom: 8,
-                  width: "100%",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Space size={4}>
-                  <FilterOutlined style={{ color: "#7c3aed", fontSize: 12 }} />
-                  <Segmented
-                    size="small"
-                    options={FILTER_OPTIONS}
-                    value={filter}
-                    onChange={setFilter}
-                  />
-                </Space>
-                {logs.length > 0 && (
-                  <Tooltip title="Copy all logs">
-                    <Button size="small" type="text" icon={<CopyOutlined />} onClick={handleCopy} />
-                  </Tooltip>
-                )}
-              </Space>
+    <section className="runtime-logs-view" aria-label="Runtime logs">
+      <div className="runtime-logs-header">{label}</div>
+      <Space
+        style={{
+          marginBottom: 12,
+          width: "100%",
+          justifyContent: "space-between",
+        }}
+      >
+        <Space size={4}>
+          <FilterOutlined style={{ color: "#7c3aed", fontSize: 12 }} />
+          <Segmented size="small" options={FILTER_OPTIONS} value={filter} onChange={setFilter} />
+        </Space>
+        {logs.length > 0 ? (
+          <Tooltip title="Copy all logs">
+            <Button size="small" type="text" icon={<CopyOutlined />} onClick={handleCopy} />
+          </Tooltip>
+        ) : null}
+      </Space>
 
-              <div className="runtimeLogsScrollContainer" ref={scrollRef}>
-                <List
-                  size="small"
-                  dataSource={filteredItems}
-                  locale={{
-                    emptyText: "Runtime logs will appear here.",
-                  }}
-                  renderItem={(logItem) => (
-                    <List.Item className="log-entry">
-                      <Space direction="vertical" size={0} style={{ width: "100%" }}>
-                        <Space wrap>
-                          <Tag color={LEVEL_COLOR[logItem.level]}>
-                            {logItem.level.toUpperCase()}
-                          </Tag>
-                          <Tag>{logItem.stage.toUpperCase()}</Tag>
-                          <Tooltip title={logItem.timestampIso}>
-                            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                              {relativeTime(logItem.timestampIso)}
-                            </Typography.Text>
-                          </Tooltip>
-                        </Space>
-                        <Typography.Text style={{ fontFamily: "var(--font-mono, monospace)" }}>
-                          {logItem.message}
-                        </Typography.Text>
-                        {logItem.details ? (
-                          <Typography.Text
-                            type="secondary"
-                            style={{
-                              fontFamily: "var(--font-mono, monospace)",
-                              fontSize: 12,
-                            }}
-                          >
-                            {logItem.details}
-                          </Typography.Text>
-                        ) : null}
-                      </Space>
-                    </List.Item>
-                  )}
-                />
-              </div>
-            </>
-          ),
-        },
-      ]}
-    />
+      <div className="runtimeLogsScrollContainer" ref={scrollRef}>
+        <List
+          size="small"
+          dataSource={filteredItems}
+          locale={{ emptyText: "Runtime logs will appear here." }}
+          renderItem={(logItem) => (
+            <List.Item className="log-entry">
+              <Space direction="vertical" size={0} style={{ width: "100%" }}>
+                <Space wrap>
+                  <Tag color={LEVEL_COLOR[logItem.level]}>{logItem.level.toUpperCase()}</Tag>
+                  <Tag>{logItem.stage.toUpperCase()}</Tag>
+                  <Tooltip title={logItem.timestampIso}>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      {relativeTime(logItem.timestampIso)}
+                    </Typography.Text>
+                  </Tooltip>
+                </Space>
+                <Typography.Text style={{ fontFamily: "var(--font-mono, monospace)" }}>
+                  {logItem.message}
+                </Typography.Text>
+                {logItem.details ? (
+                  <Typography.Text
+                    type="secondary"
+                    style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 12 }}
+                  >
+                    {logItem.details}
+                  </Typography.Text>
+                ) : null}
+              </Space>
+            </List.Item>
+          )}
+        />
+      </div>
+    </section>
   );
 }

@@ -20,15 +20,23 @@ export type BlockProgress = {
   failed: number;
 };
 
+export type ConnectionProgress = {
+  message: string;
+  processedProfiles: number;
+  totalProfiles: number;
+};
+
 export type BlockOutcome = {
   login: string;
   success: boolean;
   errorMessage: string | null;
+  action?: "block" | "remove";
 };
 
 export type SpamBlockerState = {
   token: string;
   connectionStatus: TaskStatus;
+  connectionProgress: ConnectionProgress;
   authenticatedUser: AuthenticatedGitHubUser | null;
   oauthScopes: string | null;
   scopeWarning: string | null;
@@ -36,6 +44,12 @@ export type SpamBlockerState = {
   blockedUserLogins: string[];
   blockedUserProfiles: Record<string, GitHubProfile>;
   selectedBlockedUserLogins: string[];
+  followerLogins: string[];
+  followingLogins: string[];
+  socialProfiles: Record<string, GitHubProfile>;
+  socialActionStatus: TaskStatus;
+  socialActionLogin: string | null;
+  includeFollowingInAnalysis: boolean;
   detectionSensitivity: DetectionSensitivity;
   customKeywords: string[];
   detections: SpamDetection[];

@@ -22,7 +22,7 @@ export function BlockingCard() {
   const selectedLogins = useSpamBlockerStore((state) => state.selectedLogins);
   const setBlockDelayMs = useSpamBlockerStore((state) => state.setBlockDelayMs);
   const blockSelectedAccounts = useSpamBlockerStore((state) => state.blockSelectedAccounts);
-  const removeFollowers = useSpamBlockerStore((state) => state.removeFollowers);
+  const removeConnections = useSpamBlockerStore((state) => state.removeConnections);
 
   const blockPercent =
     blockProgress.total > 0 ? Math.round((blockProgress.completed / blockProgress.total) * 100) : 0;
@@ -68,12 +68,12 @@ export function BlockingCard() {
             </Button>
           </Popconfirm>
           <Popconfirm
-            title="Proceed with removing selected followers?"
-            description="Each account will be blocked then immediately unblocked to remove them from your followers list."
+            title="Remove selected connections?"
+            description="Followers are removed with block then unblock; accounts you follow are unfollowed."
             okText="Remove"
             cancelText="Cancel"
             onConfirm={() => {
-              void removeFollowers();
+              void removeConnections();
             }}
             disabled={actionsDisabled || blockStatus === "running"}
           >
@@ -84,7 +84,7 @@ export function BlockingCard() {
               loading={blockStatus === "running"}
               disabled={actionsDisabled}
             >
-              Remove Followers
+              Remove Connections
             </Button>
           </Popconfirm>
         </Space>
@@ -113,7 +113,11 @@ export function BlockingCard() {
             <List.Item>
               <Space>
                 <Typography.Text>{`@${outcome.login}`}</Typography.Text>
-                {outcome.success ? <Tag color="green">Blocked</Tag> : <Tag color="red">Failed</Tag>}
+                {outcome.success ? (
+                  <Tag color="green">{outcome.action === "remove" ? "Removed" : "Blocked"}</Tag>
+                ) : (
+                  <Tag color="red">Failed</Tag>
+                )}
                 {!outcome.success && outcome.errorMessage ? (
                   <Typography.Text type="secondary">{outcome.errorMessage}</Typography.Text>
                 ) : null}

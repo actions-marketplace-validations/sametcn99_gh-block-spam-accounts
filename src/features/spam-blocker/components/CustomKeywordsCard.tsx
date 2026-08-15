@@ -4,7 +4,7 @@ import {
   SecurityScanOutlined,
   TagOutlined,
 } from "@ant-design/icons";
-import { Badge, Button, Card, Input, Segmented, Space, Tag, Typography } from "antd";
+import { Badge, Button, Card, Input, Segmented, Space, Switch, Tag, Typography } from "antd";
 import { useState } from "react";
 import { useSpamBlockerStore } from "../../../stores/useSpamBlockerStore";
 import type { DetectionSensitivity } from "../../../types/spam";
@@ -13,7 +13,13 @@ export function CustomKeywordsCard() {
   const [keywordDraft, setKeywordDraft] = useState("");
   const detectionSensitivity = useSpamBlockerStore((state) => state.detectionSensitivity);
   const customKeywords = useSpamBlockerStore((state) => state.customKeywords);
+  const includeFollowingInAnalysis = useSpamBlockerStore(
+    (state) => state.includeFollowingInAnalysis,
+  );
   const setDetectionSensitivity = useSpamBlockerStore((state) => state.setDetectionSensitivity);
+  const setIncludeFollowingInAnalysis = useSpamBlockerStore(
+    (state) => state.setIncludeFollowingInAnalysis,
+  );
   const addCustomKeyword = useSpamBlockerStore((state) => state.addCustomKeyword);
   const removeCustomKeyword = useSpamBlockerStore((state) => state.removeCustomKeyword);
 
@@ -78,6 +84,18 @@ export function CustomKeywordsCard() {
           />
           <Typography.Text type="secondary">
             Aggressive catches more suspicious profiles, Conservative reduces false positives.
+          </Typography.Text>
+        </Space>
+        <Space direction="vertical" size={4} style={{ width: "100%" }}>
+          <Space>
+            <Switch
+              checked={includeFollowingInAnalysis}
+              onChange={setIncludeFollowingInAnalysis}
+            />
+            <Typography.Text strong>Include following accounts in analysis</Typography.Text>
+          </Space>
+          <Typography.Text type="secondary">
+            When enabled, accounts you follow are added to the spam-analysis candidate list.
           </Typography.Text>
         </Space>
         <Space.Compact style={{ width: "100%" }}>

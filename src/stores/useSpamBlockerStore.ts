@@ -13,13 +13,16 @@ import { fetchBlockedLogins } from "../services/github/fetchBlockedLogins";
 import { fetchFollowers } from "../services/github/fetchFollowers";
 import { fetchFollowing } from "../services/github/fetchFollowing";
 import { fetchProfiles } from "../services/github/fetchProfiles";
+import { followUserByLogin } from "../services/github/followUserByLogin";
 import { unblockUserByLogin } from "../services/github/unblockUserByLogin";
+import { unfollowUserByLogin } from "../services/github/unfollowUserByLogin";
 import type { LogLevel, LogStage } from "../types/logging";
 import type { DetectionSensitivity } from "../types/spam";
 import type {
   AnalysisProgress,
   BlockOutcome,
   BlockProgress,
+  ConnectionProgress,
   SpamBlockerState,
 } from "../types/workflow";
 
@@ -41,9 +44,16 @@ const emptyBlockProgress: BlockProgress = {
   failed: 0,
 };
 
+const emptyConnectionProgress: ConnectionProgress = {
+  message: "Ready to connect.",
+  processedProfiles: 0,
+  totalProfiles: 0,
+};
+
 const baseState: SpamBlockerState = {
   token: "",
   connectionStatus: "idle",
+  connectionProgress: emptyConnectionProgress,
   authenticatedUser: null,
   oauthScopes: null,
   scopeWarning: null,
@@ -51,6 +61,12 @@ const baseState: SpamBlockerState = {
   blockedUserLogins: [],
   blockedUserProfiles: {},
   selectedBlockedUserLogins: [],
+  followerLogins: [],
+  followingLogins: [],
+  socialProfiles: {},
+  socialActionStatus: "idle",
+  socialActionLogin: null,
+  includeFollowingInAnalysis: false,
   detectionSensitivity: "balanced",
   customKeywords: [],
   detections: [],
@@ -72,6 +88,7 @@ const baseState: SpamBlockerState = {
 type SpamBlockerActions = {
   setToken: (token: string) => void;
   setDetectionSensitivity: (sensitivity: DetectionSensitivity) => void;
+  setIncludeFollowingInAnalysis: (includeFollowing: boolean) => void;
   setBlockDelayMs: (delayMs: number | null) => void;
   addCustomKeyword: (keyword: string) => void;
   removeCustomKeyword: (keyword: string) => void;
@@ -83,9 +100,13 @@ type SpamBlockerActions = {
   connectAccount: () => Promise<void>;
   analyzeAccounts: () => Promise<void>;
   blockSelectedAccounts: () => Promise<void>;
-  removeFollowers: () => Promise<void>;
+  removeConnections: () => Promise<void>;
   unblockSelectedAccounts: () => Promise<void>;
   unblockSingleAccount: (login: string) => Promise<void>;
+  followAccount: (login: string) => Promise<void>;
+  unfollowAccount: (login: string) => Promise<void>;
+  blockAccount: (login: string) => Promise<void>;
+  removeFollower: (login: string) => Promise<void>;
 };
 
 export type SpamBlockerStore = SpamBlockerState & SpamBlockerActions;
@@ -138,6 +159,17 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
   setDetectionSensitivity: (sensitivity) => {
     set({ detectionSensitivity: sensitivity });
     appendLog(set, "info", "analysis", `Detection profile changed to ${sensitivity}.`);
+  },
+  setIncludeFollowingInAnalysis: (includeFollowing) => {
+    set({ includeFollowingInAnalysis: includeFollowing });
+    appendLog(
+      set,
+      "info",
+      "analysis",
+      includeFollowing
+        ? "Following accounts will be included in the next analysis."
+        : "Following accounts will be excluded from the next analysis.",
+    );
   },
   setBlockDelayMs: (delayMs) => {
     const safeDelay =
@@ -228,6 +260,11 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
 
     set({
       connectionStatus: "running",
+      connectionProgress: {
+        message: "Validating your token and GitHub identity...",
+        processedProfiles: 0,
+        totalProfiles: 0,
+      },
       lastError: null,
     });
 
@@ -240,6 +277,13 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
       const rateLimitInfo = extractRateLimitInfo(authResponse.headers);
 
       try {
+        set({
+          connectionProgress: {
+            message: "Checking access to your followers list...",
+            processedProfiles: 0,
+            totalProfiles: 0,
+          },
+        });
         await octokit.rest.users.listFollowersForAuthenticatedUser({ per_page: 1 });
       } catch (permError) {
         const permStatus = getErrorStatus(permError);
@@ -250,6 +294,10 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
 
           set({
             connectionStatus: "error",
+            connectionProgress: {
+              ...get().connectionProgress,
+              message: "Your token does not have the required GitHub permissions.",
+            },
             lastError: permissionError,
           });
 
@@ -258,7 +306,39 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
         }
       }
 
-      const blockedResult = await fetchBlockedLogins(octokit);
+      set({
+        connectionProgress: {
+          message: "Loading followers, following accounts, and blocked accounts...",
+          processedProfiles: 0,
+          totalProfiles: 0,
+        },
+      });
+      const [followers, following, blockedResult] = await Promise.all([
+        fetchFollowers(octokit),
+        fetchFollowing(octokit),
+        fetchBlockedLogins(octokit),
+      ]);
+      const socialLogins = Array.from(new Set([...followers, ...following].map(({ login }) => login)));
+      set({
+        connectionProgress: {
+          message: `Loading detailed profiles for ${socialLogins.length} account(s)...`,
+          processedProfiles: 0,
+          totalProfiles: socialLogins.length,
+        },
+      });
+      const socialProfiles = Object.fromEntries(
+        (await fetchProfiles(octokit, socialLogins, {
+          onProfileProcessed: (processedProfiles, totalProfiles) => {
+            set((state) => ({
+              connectionProgress: {
+                ...state.connectionProgress,
+                processedProfiles,
+                totalProfiles,
+              },
+            }));
+          },
+        })).map((profile) => [profile.login, profile]),
+      );
 
       set({
         connectionStatus: "completed",
@@ -269,6 +349,14 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
         blockedUserLogins: blockedResult.blockedUserLogins,
         blockedUserProfiles: {},
         selectedBlockedUserLogins: [],
+        followerLogins: followers.map(({ login }) => login),
+        followingLogins: following.map(({ login }) => login),
+        socialProfiles,
+        connectionProgress: {
+          message: "Connection complete. Your social lists are ready.",
+          processedProfiles: socialLogins.length,
+          totalProfiles: socialLogins.length,
+        },
         rateLimit: rateLimitInfo,
       });
 
@@ -293,12 +381,23 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
       if (scopeWarning) {
         appendLog(set, "warning", "auth", scopeWarning);
       }
+
+      appendLog(
+        set,
+        "success",
+        "fetch",
+        `Loaded ${followers.length} follower(s) and ${following.length} following account(s) with profile details.`,
+      );
     } catch (error) {
       const status = getErrorStatus(error);
       const message = status ? `${toMessage(error)} (status ${status})` : toMessage(error);
 
       set({
         connectionStatus: "error",
+        connectionProgress: {
+          ...get().connectionProgress,
+          message: "Connection could not be completed.",
+        },
         lastError: message,
       });
 
@@ -308,6 +407,7 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
   analyzeAccounts: async () => {
     const token = get().token.trim();
     const authenticatedUser = get().authenticatedUser;
+    const includeFollowingInAnalysis = get().includeFollowingInAnalysis;
 
     if (!token || !authenticatedUser) {
       set({
@@ -342,7 +442,7 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
 
       const [followers, following, blockedResult] = await Promise.all([
         fetchFollowers(octokit),
-        fetchFollowing(octokit),
+        includeFollowingInAnalysis ? fetchFollowing(octokit) : Promise.resolve([]),
         fetchBlockedLogins(octokit),
       ]);
 
@@ -372,7 +472,7 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
         set,
         "info",
         "fetch",
-        `Fetched ${followers.length} follower(s), ${following.length} following account(s), ${blockedResult.blockedLogins.size} blocked account(s), and ${candidateLogins.length} candidate account(s).`,
+        `Fetched ${followers.length} follower(s), ${following.length} following account(s)${includeFollowingInAnalysis ? "" : " (excluded from analysis)"}, ${blockedResult.blockedLogins.size} blocked account(s), and ${candidateLogins.length} candidate account(s).`,
       );
 
       if (!blockedResult.canReadBlockList) {
@@ -596,14 +696,16 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
       appendLog(set, "error", "block", "Blocking flow failed unexpectedly.", message);
     }
   },
-  removeFollowers: async () => {
+  removeConnections: async () => {
     const token = get().token.trim();
-    const selectedLogins = get().selectedLogins;
+    const selectedLogins = [...get().selectedLogins];
+    const followerLogins = get().followerLogins;
+    const followingLogins = get().followingLogins;
 
     if (!token) {
       set({
         blockStatus: "error",
-        lastError: "Token is required to remove followers.",
+        lastError: "Token is required to remove connections.",
       });
       appendLog(set, "error", "block", "Token is missing. Paste a token and retry.");
       return;
@@ -612,9 +714,9 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
     if (selectedLogins.length === 0) {
       set({
         blockStatus: "error",
-        lastError: "Select at least one account before removing followers.",
+        lastError: "Select at least one account before removing connections.",
       });
-      appendLog(set, "warning", "block", "No accounts are selected for follower removal.");
+      appendLog(set, "warning", "block", "No accounts are selected for connection removal.");
       return;
     }
 
@@ -627,7 +729,7 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
         set,
         "warning",
         "block",
-        "Follower removal cannot start while unblocking is running.",
+        "Connection removal cannot start while unblocking is running.",
       );
       return;
     }
@@ -648,7 +750,7 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
       set,
       "info",
       "block",
-      `Starting follower removal for ${selectedLogins.length} account(s) (block + unblock).`,
+      `Starting connection removal for ${selectedLogins.length} account(s).`,
     );
 
     try {
@@ -656,9 +758,20 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
       const delayMs = get().blockDelayMs;
 
       for (const login of selectedLogins) {
+        const followsYou = followerLogins.includes(login);
+        const youFollow = followingLogins.includes(login);
+        let wasBlocked = false;
+
         try {
-          await blockUserByLogin(octokit, login);
-          await unblockUserByLogin(octokit, login);
+          if (followsYou) {
+            await blockUserByLogin(octokit, login);
+            wasBlocked = true;
+            await unblockUserByLogin(octokit, login);
+          } else if (youFollow) {
+            await unfollowUserByLogin(octokit, login);
+          } else {
+            throw new Error("This account is no longer in your follower or following lists.");
+          }
 
           set((state) => {
             const { [login]: _, ...remainingBlockedProfiles } = state.blockedUserProfiles;
@@ -667,11 +780,14 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
                 login,
                 success: true,
                 errorMessage: null,
+                action: "remove",
               }),
               blockedUserLogins: state.blockedUserLogins.filter(
                 (blockedLogin) => blockedLogin !== login,
               ),
               blockedUserProfiles: remainingBlockedProfiles,
+              followerLogins: state.followerLogins.filter((currentLogin) => currentLogin !== login),
+              followingLogins: state.followingLogins.filter((currentLogin) => currentLogin !== login),
               blockProgress: {
                 ...state.blockProgress,
                 completed: state.blockProgress.completed + 1,
@@ -680,7 +796,14 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
             };
           });
 
-          appendLog(set, "success", "block", `Removed @${login} from followers.`);
+          appendLog(
+            set,
+            "success",
+            "block",
+            followsYou
+              ? `Removed @${login} from your followers.`
+              : `Unfollowed @${login} to remove the connection.`,
+          );
         } catch (error) {
           const status = getErrorStatus(error);
           const errorMessage =
@@ -689,10 +812,19 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
               : toMessage(error);
 
           set((state) => ({
+            ...(wasBlocked
+              ? {
+                  blockedUserLogins: appendUniqueLogin(state.blockedUserLogins, login),
+                  blockedUserProfiles: state.socialProfiles[login]
+                    ? { ...state.blockedUserProfiles, [login]: state.socialProfiles[login] }
+                    : state.blockedUserProfiles,
+                }
+              : {}),
             blockOutcomes: appendOutcome(state.blockOutcomes, {
               login,
               success: false,
               errorMessage,
+              action: "remove",
             }),
             blockProgress: {
               ...state.blockProgress,
@@ -705,7 +837,7 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
             set,
             "error",
             "block",
-            `Failed to remove @${login} from followers.`,
+            `Failed to remove the connection with @${login}.`,
             errorMessage,
           );
         }
@@ -722,7 +854,7 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
         set,
         "success",
         "block",
-        `Follower removal completed: ${succeeded} succeeded, ${failed} failed.`,
+        `Connection removal completed: ${succeeded} succeeded, ${failed} failed.`,
       );
     } catch (error) {
       const message = toMessage(error);
@@ -732,7 +864,7 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
         lastError: message,
       });
 
-      appendLog(set, "error", "block", "Follower removal flow failed unexpectedly.", message);
+      appendLog(set, "error", "block", "Connection removal flow failed unexpectedly.", message);
     }
   },
   unblockSelectedAccounts: async () => {
@@ -869,5 +1001,101 @@ export const useSpamBlockerStore = create<SpamBlockerStore>((set, get) => ({
     set({ selectedBlockedUserLogins: [login] });
     appendLog(set, "info", "selection", `Prepared single-account unblock for @${login}.`);
     await get().unblockSelectedAccounts();
+  },
+  followAccount: async (login) => {
+    const token = get().token.trim();
+    if (!token || get().socialActionStatus === "running") return;
+
+    set({ socialActionStatus: "running", socialActionLogin: login, lastError: null });
+    try {
+      await followUserByLogin(createGitHubClient(token), login);
+      set((state) => ({
+        followingLogins: appendUniqueLogin(state.followingLogins, login),
+        socialActionStatus: "completed",
+        socialActionLogin: null,
+      }));
+      appendLog(set, "success", "fetch", `Followed @${login}.`);
+    } catch (error) {
+      const message = toMessage(error);
+      set({ socialActionStatus: "error", socialActionLogin: null, lastError: message });
+      appendLog(set, "error", "fetch", `Failed to follow @${login}.`, message);
+    }
+  },
+  unfollowAccount: async (login) => {
+    const token = get().token.trim();
+    if (!token || get().socialActionStatus === "running") return;
+
+    set({ socialActionStatus: "running", socialActionLogin: login, lastError: null });
+    try {
+      await unfollowUserByLogin(createGitHubClient(token), login);
+      set((state) => ({
+        followingLogins: state.followingLogins.filter((currentLogin) => currentLogin !== login),
+        socialActionStatus: "completed",
+        socialActionLogin: null,
+      }));
+      appendLog(set, "success", "fetch", `Unfollowed @${login}.`);
+    } catch (error) {
+      const message = toMessage(error);
+      set({ socialActionStatus: "error", socialActionLogin: null, lastError: message });
+      appendLog(set, "error", "fetch", `Failed to unfollow @${login}.`, message);
+    }
+  },
+  blockAccount: async (login) => {
+    const token = get().token.trim();
+    if (!token || get().socialActionStatus === "running") return;
+
+    set({ socialActionStatus: "running", socialActionLogin: login, lastError: null });
+    try {
+      await blockUserByLogin(createGitHubClient(token), login);
+      set((state) => ({
+        blockedUserLogins: appendUniqueLogin(state.blockedUserLogins, login),
+        blockedUserProfiles: state.socialProfiles[login]
+          ? { ...state.blockedUserProfiles, [login]: state.socialProfiles[login] }
+          : state.blockedUserProfiles,
+        socialActionStatus: "completed",
+        socialActionLogin: null,
+      }));
+      appendLog(set, "success", "block", `Blocked @${login}.`);
+    } catch (error) {
+      const message = toMessage(error);
+      set({ socialActionStatus: "error", socialActionLogin: null, lastError: message });
+      appendLog(set, "error", "block", `Failed to block @${login}.`, message);
+    }
+  },
+  removeFollower: async (login) => {
+    const token = get().token.trim();
+    if (!token || get().socialActionStatus === "running") return;
+
+    set({ socialActionStatus: "running", socialActionLogin: login, lastError: null });
+    let wasBlocked = false;
+    try {
+      const octokit = createGitHubClient(token);
+      await blockUserByLogin(octokit, login);
+      wasBlocked = true;
+      await unblockUserByLogin(octokit, login);
+      set((state) => ({
+        followerLogins: state.followerLogins.filter((currentLogin) => currentLogin !== login),
+        blockedUserLogins: state.blockedUserLogins.filter((currentLogin) => currentLogin !== login),
+        socialActionStatus: "completed",
+        socialActionLogin: null,
+      }));
+      appendLog(set, "success", "block", `Removed @${login} from followers.`);
+    } catch (error) {
+      const message = toMessage(error);
+      set((state) => ({
+        ...(wasBlocked
+          ? {
+              blockedUserLogins: appendUniqueLogin(state.blockedUserLogins, login),
+              blockedUserProfiles: state.socialProfiles[login]
+                ? { ...state.blockedUserProfiles, [login]: state.socialProfiles[login] }
+                : state.blockedUserProfiles,
+            }
+          : {}),
+        socialActionStatus: "error",
+        socialActionLogin: null,
+        lastError: message,
+      }));
+      appendLog(set, "error", "block", `Failed to remove @${login} from followers.`, message);
+    }
   },
 }));

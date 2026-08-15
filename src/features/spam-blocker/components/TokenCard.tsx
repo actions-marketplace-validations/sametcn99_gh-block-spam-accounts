@@ -5,7 +5,7 @@ import {
   SearchOutlined,
   UnlockOutlined,
 } from "@ant-design/icons";
-import { Alert, Button, Card, Input, Skeleton, Space, Typography } from "antd";
+import { Alert, Button, Card, Input, Progress, Skeleton, Space, Typography } from "antd";
 import { useMemo, useRef } from "react";
 import { useSpamBlockerStore } from "../../../stores/useSpamBlockerStore";
 
@@ -14,6 +14,7 @@ const TOKEN_PATTERN = /^(ghp_[a-zA-Z0-9]{36,}|github_pat_[a-zA-Z0-9_]{22,})/;
 export function TokenCard() {
   const token = useSpamBlockerStore((state) => state.token);
   const connectionStatus = useSpamBlockerStore((state) => state.connectionStatus);
+  const connectionProgress = useSpamBlockerStore((state) => state.connectionProgress);
   const authenticatedUser = useSpamBlockerStore((state) => state.authenticatedUser);
   const analysisStatus = useSpamBlockerStore((state) => state.analysisStatus);
   const blockStatus = useSpamBlockerStore((state) => state.blockStatus);
@@ -77,10 +78,25 @@ export function TokenCard() {
             message="Your token stays in memory only for this tab. It is never persisted to local storage, session storage, cookies, or URL parameters."
           />
           {connectionStatus === "running" && !isConnected ? (
-            <div className="skeleton-token-loading">
-              <Skeleton.Input active block style={{ height: 36 }} />
-              <Skeleton.Button active style={{ width: 120, marginTop: 12 }} />
-            </div>
+            <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+              <Alert showIcon type="info" message={connectionProgress.message} />
+              {connectionProgress.totalProfiles > 0 ? (
+                <Progress
+                  percent={Math.round(
+                    (connectionProgress.processedProfiles / connectionProgress.totalProfiles) * 100,
+                  )}
+                  format={() => `${connectionProgress.processedProfiles}/${connectionProgress.totalProfiles} profiles`}
+                />
+              ) : (
+                <div className="skeleton-token-loading">
+                  <Skeleton.Input active block style={{ height: 36 }} />
+                  <Skeleton.Button active style={{ width: 120, marginTop: 12 }} />
+                </div>
+              )}
+              <Typography.Text type="secondary">
+                We verify your token, load account lists, then fetch each profile's details.
+              </Typography.Text>
+            </Space>
           ) : (
             <>
               <Typography.Text strong>GitHub Personal Access Token</Typography.Text>
