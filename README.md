@@ -74,30 +74,51 @@ on:
     inputs:
       apply-blocks:
         description: "Execute real block operations"
-        required: true
+        required: false
         type: boolean
         default: false
+      detection-sensitivity:
+        description: "Detection sensitivity"
+        required: false
+        type: choice
+        default: balanced
+        options:
+          - aggressive
+          - balanced
+          - conservative
+      target-type:
+        description: "Which social graph to scan"
+        required: false
+        type: choice
+        default: both
+        options:
+          - followers
+          - following
+          - both
   schedule:
     - cron: "0 6 * * *"
+
+permissions:
+  contents: read
 
 jobs:
   spam-blocker:
     runs-on: ubuntu-latest
     steps:
       - name: Run spam blocker
-        uses: sametcn99/gh-block-spam-accounts@main
+        uses: sametcn99/gh-block-spam-accounts@1.2
         with:
           github-token: ${{ secrets.SPAM_BLOCKER_TOKEN }}
-          detection-sensitivity: balanced
-          target-type: both
-          apply-blocks: ${{ github.event_name == 'workflow_dispatch' && inputs.apply-blocks || 'false' }}
+          detection-sensitivity: ${{ github.event_name == 'workflow_dispatch' && inputs['detection-sensitivity'] || 'balanced' }}
+          target-type: ${{ github.event_name == 'workflow_dispatch' && inputs['target-type'] || 'both' }}
+          apply-blocks: ${{ github.event_name == 'workflow_dispatch' && inputs['apply-blocks'] || false }}
 ```
 
 A ready-to-copy remote usage example also exists in `examples/spam-blocker-remote.yml`.
 
-The repository also includes `.github/workflows/spam-blocker-example.yml` as a local self-test workflow for this repo. For real blocking, replace `${{ github.token }}` with a PAT secret such as `${{ secrets.SPAM_BLOCKER_TOKEN }}`.
+The repository also includes `./spam-blocker.example.yml` as a local self-test workflow for this repo. For real blocking, replace `${{ github.token }}` with a PAT secret such as `${{ secrets.SPAM_BLOCKER_TOKEN }}`.
 
-For external consumption, prefer a release tag such as `@v1` instead of `@main`.
+For external consumption, use the pinned release tag `@1.2` instead of `@main`.
 
 ### Token Notes
 
@@ -119,6 +140,7 @@ The repository `GITHUB_TOKEN` is usually not enough to block users. Use either:
   - strong-signal overrides
   - heuristic signals
   - basic obfuscation handling
+  - detection of accounts created within the last 30 days that follow more than 1,000 accounts
   - sensitivity profiles
 - Review table with per-account detection reasons
 - Bulk select/clear for detections
@@ -186,6 +208,8 @@ The detection engine combines static rules and heuristic signals.
 - location
 - website URL
 - twitter username
+- account creation time
+- following count
 
 ### Rule Model
 

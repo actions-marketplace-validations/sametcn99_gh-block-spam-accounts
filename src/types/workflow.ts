@@ -1,4 +1,4 @@
-import type { AuthenticatedGitHubUser, RateLimitInfo } from "./github";
+import type { AuthenticatedGitHubUser, GitHubProfile, RateLimitInfo } from "./github";
 import type { AppLogEntry } from "./logging";
 import type { DetectionSensitivity, SpamDetection } from "./spam";
 
@@ -20,21 +20,36 @@ export type BlockProgress = {
   failed: number;
 };
 
+export type ConnectionProgress = {
+  message: string;
+  processedProfiles: number;
+  totalProfiles: number;
+};
+
 export type BlockOutcome = {
   login: string;
   success: boolean;
   errorMessage: string | null;
+  action?: "block" | "remove";
 };
 
 export type SpamBlockerState = {
   token: string;
   connectionStatus: TaskStatus;
+  connectionProgress: ConnectionProgress;
   authenticatedUser: AuthenticatedGitHubUser | null;
   oauthScopes: string | null;
   scopeWarning: string | null;
   canReadBlockedUsers: boolean;
   blockedUserLogins: string[];
+  blockedUserProfiles: Record<string, GitHubProfile>;
   selectedBlockedUserLogins: string[];
+  followerLogins: string[];
+  followingLogins: string[];
+  socialProfiles: Record<string, GitHubProfile>;
+  socialActionStatus: TaskStatus;
+  socialActionLogin: string | null;
+  includeFollowingInAnalysis: boolean;
   detectionSensitivity: DetectionSensitivity;
   customKeywords: string[];
   detections: SpamDetection[];

@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run spam blocker
-        uses: sametcn99/gh-block-spam-accounts@main
+        uses: sametcn99/gh-block-spam-accounts@1.2
         with:
           github-token: \${{ secrets.SPAM_BLOCKER_TOKEN }}
           detection-sensitivity: balanced
@@ -77,8 +77,8 @@ const collapseItems = (remoteExampleUrl: string, readmeActionSectionUrl: string)
           <Typography.Title level={5}>How it works</Typography.Title>
           <Typography.Paragraph style={{ marginBottom: 8 }}>
             Add a workflow in any repository and reference this action with a release tag such as{" "}
-            <Typography.Text code>sametcn99/gh-block-spam-accounts@main</Typography.Text>. The
-            action will authenticate with your token, collect followers, following accounts, or both
+            <Typography.Text code>sametcn99/gh-block-spam-accounts@1.2</Typography.Text>. The action
+            will authenticate with your token, collect followers, following accounts, or both
             depending on your configuration, apply the same spam detection rules used by the web
             app, and optionally send block requests when{" "}
             <Typography.Text code>apply-blocks</Typography.Text> is enabled.

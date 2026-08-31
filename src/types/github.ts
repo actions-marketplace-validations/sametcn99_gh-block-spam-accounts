@@ -4,12 +4,16 @@ export type GitHubAccount = {
 
 export type GitHubProfile = {
   login: string;
+  createdAt: string;
   name: string | null;
   bio: string | null;
   company: string | null;
   location: string | null;
   websiteUrl: string | null;
   twitterUsername: string | null;
+  followers: number;
+  following: number;
+  publicRepos: number;
 };
 
 export type AuthenticatedGitHubUser = {

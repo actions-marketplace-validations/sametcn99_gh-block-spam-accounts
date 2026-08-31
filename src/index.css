@@ -30,6 +30,81 @@ body {
   min-height: 100vh;
 }
 
+.landing-layout {
+  background:
+    radial-gradient(ellipse 65% 45% at 50% 0%, rgba(124, 58, 237, 0.17), transparent 70%),
+    transparent;
+}
+
+.landing-content {
+  width: min(100% - 32px, 720px);
+  margin: 0 auto;
+  padding: 32px 0 40px;
+}
+
+.landing-connect-card {
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+}
+
+.app-workspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding: 14px 18px;
+  border: 1px solid #1e293b;
+  border-radius: 14px;
+  background: rgba(17, 24, 39, 0.88);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+/* Keep all Ant Design overlays above sticky bars, fixed table cells, and cards. */
+.ant-select-dropdown,
+.ant-dropdown,
+.ant-picker-dropdown,
+.ant-cascader-dropdown,
+.ant-popover,
+.ant-tooltip,
+.ant-popconfirm {
+  z-index: 2000 !important;
+}
+
+/* Keep account actions visually distinct when tables scroll horizontally. */
+.social-actions-cell {
+  background: #151c2d !important;
+  box-shadow: inset 1px 0 0 rgba(167, 139, 250, 0.2);
+}
+
+.workspace-navigation {
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(17, 24, 39, 0.88);
+}
+
+.workspace-navigation .ant-menu {
+  min-width: 0;
+  background: transparent;
+  border-bottom: 0;
+  padding: 0 8px;
+  overflow: hidden;
+}
+
+.workspace-navigation .ant-menu-item {
+  margin-inline: 4px !important;
+  border-radius: 8px 8px 0 0;
+}
+
+.workspace-view {
+  animation: fadeInUp 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ant-table-thead > tr > .social-actions-cell {
+  background: #1a2236 !important;
+}
+
 /* --- Entrance animations --- */
 @keyframes fadeIn {
   from {
@@ -478,6 +553,17 @@ body {
 
 /* Mobile */
 @media (max-width: 576px) {
+  .landing-content {
+    width: min(100% - 20px, 720px);
+    padding-top: 16px;
+  }
+
+  .app-workspace-header {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 12px;
+  }
+
   .ant-steps .ant-steps-item-title {
     font-size: 11px !important;
   }
@@ -546,12 +632,14 @@ body {
     padding: 12px !important;
   }
 
-  /* Detection table horizontal scroll */
-  .detection-table .ant-table {
+  /* Detection & Blocked tables horizontal scroll */
+  .detection-table .ant-table,
+  .blocked-table .ant-table {
     overflow-x: auto !important;
   }
 
-  .detection-table .ant-table-content {
+  .detection-table .ant-table-content,
+  .blocked-table .ant-table-content {
     min-width: 540px;
   }
 

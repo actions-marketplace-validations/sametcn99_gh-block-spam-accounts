@@ -1,7 +1,8 @@
 import { Layout, Space } from "antd";
 import type { CSSProperties } from "react";
-import { useSpamBlockerStore } from "../../stores/useSpamBlockerStore";
+import { useState, type ReactNode } from "react";
 import { AnalysisProgressCard } from "./components/AnalysisProgressCard";
+import { AppWorkspaceHeader } from "./components/AppWorkspaceHeader";
 import { AuthStatusCard } from "./components/AuthStatusCard";
 import { BlockedUsersCard } from "./components/BlockedUsersCard";
 import { BlockingCard } from "./components/BlockingCard";
@@ -13,33 +14,39 @@ import { InsightCards } from "./components/InsightCards";
 import { PageHeaderCard } from "./components/PageHeaderCard";
 import { RateLimitCard } from "./components/RateLimitCard";
 import { RuntimeLogsCard } from "./components/RuntimeLogsCard";
-import { StickyStatusBar } from "./components/StickyStatusBar";
+import { FollowersCard, FollowingCard } from "./components/SocialAccountsCard";
 import { TokenCard } from "./components/TokenCard";
-import { sectionIds, type WorkflowStep, WorkflowSteps } from "./components/WorkflowSteps";
+import { WorkspaceNavigation, type WorkspaceView } from "./components/WorkspaceNavigation";
+import { useSpamBlockerStore } from "../../stores/useSpamBlockerStore";
 
 const contentStyle: CSSProperties = {
-  maxWidth: 960,
   width: "100%",
-  margin: "0 auto",
   padding: "24px 20px 40px",
 };
 
-function useCurrentStep(): WorkflowStep {
-  const authenticatedUser = useSpamBlockerStore((s) => s.authenticatedUser);
-  const analysisStatus = useSpamBlockerStore((s) => s.analysisStatus);
-  const detections = useSpamBlockerStore((s) => s.detections);
-  const blockStatus = useSpamBlockerStore((s) => s.blockStatus);
-
-  if (!authenticatedUser) return 0;
-  if (analysisStatus === "idle") return 1;
-  if (analysisStatus === "running") return 2;
-  if (analysisStatus === "completed" && detections.length > 0 && blockStatus === "idle") return 3;
-  if (blockStatus !== "idle" || analysisStatus === "completed") return 4;
-  return 1;
-}
-
 export function SpamBlockerPage() {
-  const currentStep = useCurrentStep();
+  const [activeView, setActiveView] = useState<WorkspaceView>("dashboard");
+  const authenticatedUser = useSpamBlockerStore((state) => state.authenticatedUser);
+
+  if (!authenticatedUser) {
+    return (
+      <Layout className="landing-layout" style={{ minHeight: "100vh" }}>
+        <a href="#main-content" className="skip-to-content">
+          Skip to main content
+        </a>
+        <Layout.Content id="main-content" role="main" aria-label="Connect your GitHub account">
+          <div className="landing-content">
+            <PageHeaderCard />
+            <div className="landing-connect-card">
+              <TokenCard />
+            </div>
+            <GitHubActionGuideCard />
+            <ContributionCard />
+          </div>
+        </Layout.Content>
+      </Layout>
+    );
+  }
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -52,79 +59,51 @@ export function SpamBlockerPage() {
         aria-label="Spam blocker workspace"
         style={contentStyle}
       >
-        <PageHeaderCard />
-        <GitHubActionGuideCard />
-        <WorkflowSteps currentStep={currentStep} />
-        <StickyStatusBar />
+        <AppWorkspaceHeader />
+        <WorkspaceNavigation activeView={activeView} onViewChange={setActiveView} />
 
         <Space direction="vertical" size="large" style={{ width: "100%", marginTop: 20 }}>
-          {/* Step 0: Connect */}
-          <div
-            id={sectionIds[0]}
-            className="card-enter"
-            style={{ "--card-index": 0 } as CSSProperties}
-          >
-            <TokenCard />
-          </div>
-
-          {/* Step 1: Configure – visible after auth */}
-          {currentStep >= 1 && (
-            <div
-              id={sectionIds[1]}
-              className="card-enter"
-              style={{ "--card-index": 1 } as CSSProperties}
-            >
-              <Space direction="vertical" size="large" style={{ width: "100%" }}>
-                <AuthStatusCard />
-                <CustomKeywordsCard />
-              </Space>
-            </div>
-          )}
-
-          {/* Step 2: Analyze – visible during / after analysis */}
-          {currentStep >= 2 && (
-            <div
-              id={sectionIds[2]}
-              className="card-enter"
-              style={{ "--card-index": 2 } as CSSProperties}
-            >
+          {activeView === "dashboard" ? (
+            <ViewSection>
+              <AuthStatusCard />
+              <InsightCards />
               <Space direction="vertical" size="large" style={{ width: "100%" }}>
                 <AnalysisProgressCard />
                 <RateLimitCard />
               </Space>
-            </div>
-          )}
+            </ViewSection>
+          ) : null}
 
-          {/* Step 3: Review – visible when detections exist */}
-          {currentStep >= 3 && (
-            <div
-              id={sectionIds[3]}
-              className="card-enter"
-              style={{ "--card-index": 3 } as CSSProperties}
-            >
-              <Space direction="vertical" size="large" style={{ width: "100%" }}>
-                <InsightCards />
-                <DetectionsCard />
-                <BlockingCard />
-              </Space>
-            </div>
-          )}
+          {activeView === "analysis" ? (
+            <ViewSection>
+              <CustomKeywordsCard />
+              <AnalysisProgressCard />
+              <DetectionsCard />
+              <BlockingCard />
+            </ViewSection>
+          ) : null}
 
-          {/* Step 4: Manage – visible after blocking started or completed */}
-          {currentStep >= 4 && (
-            <div
-              id={sectionIds[4]}
-              className="card-enter"
-              style={{ "--card-index": 4 } as CSSProperties}
-            >
-              <BlockedUsersCard />
-            </div>
-          )}
+          {activeView === "followers" ? <ViewSection><FollowersCard /></ViewSection> : null}
+          {activeView === "following" ? <ViewSection><FollowingCard /></ViewSection> : null}
+          {activeView === "blocked" ? <ViewSection><BlockedUsersCard /></ViewSection> : null}
 
-          <ContributionCard />
-          <RuntimeLogsCard />
+          {activeView === "activity" ? (
+            <ViewSection>
+              <RuntimeLogsCard />
+            </ViewSection>
+          ) : null}
         </Space>
       </Layout.Content>
     </Layout>
+  );
+}
+
+function ViewSection({ children }: { children: ReactNode }) {
+  return (
+    <div className="workspace-view" style={{ "--card-index": 0 } as CSSProperties}>
+      <Space direction="vertical" size="large" style={{ width: "100%" }}>
+        {children}
+      </Space>
+    </div>
   );
 }

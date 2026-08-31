@@ -27,12 +27,16 @@ export async function fetchProfiles(
 
           return {
             login: data.login,
+            createdAt: data.created_at,
             name: data.name,
             bio: data.bio,
             company: "company" in data ? data.company : null,
             location: data.location,
             websiteUrl: data.blog || null,
             twitterUsername: data.twitter_username ?? null,
+            followers: data.followers ?? 0,
+            following: data.following ?? 0,
+            publicRepos: data.public_repos ?? 0,
           } satisfies GitHubProfile;
         } catch (error) {
           const status = getErrorStatus(error);

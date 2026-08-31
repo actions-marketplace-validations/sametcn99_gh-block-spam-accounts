@@ -25,6 +25,7 @@ export const softAuroraTheme: ThemeConfig = {
     boxShadow: "0 8px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(124, 58, 237, 0.06)",
     boxShadowSecondary: "0 4px 16px rgba(0, 0, 0, 0.25)",
     motion: true,
+    zIndexPopupBase: 2000,
   },
   components: {
     Layout: {

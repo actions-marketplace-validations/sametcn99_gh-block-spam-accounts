@@ -1,3 +1,4 @@
+import { StopOutlined, UserDeleteOutlined } from "@ant-design/icons";
 import {
   Alert,
   Button,
@@ -21,9 +22,12 @@ export function BlockingCard() {
   const selectedLogins = useSpamBlockerStore((state) => state.selectedLogins);
   const setBlockDelayMs = useSpamBlockerStore((state) => state.setBlockDelayMs);
   const blockSelectedAccounts = useSpamBlockerStore((state) => state.blockSelectedAccounts);
+  const removeConnections = useSpamBlockerStore((state) => state.removeConnections);
 
   const blockPercent =
     blockProgress.total > 0 ? Math.round((blockProgress.completed / blockProgress.total) * 100) : 0;
+
+  const actionsDisabled = selectedLogins.length === 0 || unblockStatus === "running";
 
   return (
     <Card title="Blocking Controls">
@@ -41,28 +45,49 @@ export function BlockingCard() {
             }}
           />
         </Space>
-        <Popconfirm
-          title="Proceed with blocking selected accounts?"
-          description="Blocking is executed account by account and cannot be undone from this application."
-          okText="Block"
-          cancelText="Cancel"
-          onConfirm={() => {
-            void blockSelectedAccounts();
-          }}
-          disabled={
-            selectedLogins.length === 0 || blockStatus === "running" || unblockStatus === "running"
-          }
-        >
-          <Button
-            type="primary"
-            danger
-            className="cta-danger"
-            loading={blockStatus === "running"}
-            disabled={selectedLogins.length === 0 || unblockStatus === "running"}
+        <Space wrap>
+          <Popconfirm
+            title="Proceed with blocking selected accounts?"
+            description="Blocking is executed account by account and cannot be undone from this application."
+            okText="Block"
+            cancelText="Cancel"
+            onConfirm={() => {
+              void blockSelectedAccounts();
+            }}
+            disabled={actionsDisabled || blockStatus === "running"}
           >
-            Block Selected Accounts
-          </Button>
-        </Popconfirm>
+            <Button
+              type="primary"
+              danger
+              icon={<StopOutlined />}
+              className="cta-danger"
+              loading={blockStatus === "running"}
+              disabled={actionsDisabled}
+            >
+              Block Selected Accounts
+            </Button>
+          </Popconfirm>
+          <Popconfirm
+            title="Remove selected connections?"
+            description="Followers are removed with block then unblock; accounts you follow are unfollowed."
+            okText="Remove"
+            cancelText="Cancel"
+            onConfirm={() => {
+              void removeConnections();
+            }}
+            disabled={actionsDisabled || blockStatus === "running"}
+          >
+            <Button
+              type="primary"
+              icon={<UserDeleteOutlined />}
+              className="cta-primary"
+              loading={blockStatus === "running"}
+              disabled={actionsDisabled}
+            >
+              Remove Connections
+            </Button>
+          </Popconfirm>
+        </Space>
         <div className={blockStatus === "running" ? "progress-active" : undefined}>
           <Progress
             percent={blockPercent}
@@ -76,7 +101,7 @@ export function BlockingCard() {
         </Space>
         {blockStatus === "completed" && blockProgress.failed === 0 ? (
           <div className="success-alert">
-            <Alert showIcon type="success" message="Blocking completed without failures." />
+            <Alert showIcon type="success" message="Operation completed without failures." />
           </div>
         ) : null}
         <List
@@ -88,7 +113,11 @@ export function BlockingCard() {
             <List.Item>
               <Space>
                 <Typography.Text>{`@${outcome.login}`}</Typography.Text>
-                {outcome.success ? <Tag color="green">Blocked</Tag> : <Tag color="red">Failed</Tag>}
+                {outcome.success ? (
+                  <Tag color="green">{outcome.action === "remove" ? "Removed" : "Blocked"}</Tag>
+                ) : (
+                  <Tag color="red">Failed</Tag>
+                )}
                 {!outcome.success && outcome.errorMessage ? (
                   <Typography.Text type="secondary">{outcome.errorMessage}</Typography.Text>
                 ) : null}
